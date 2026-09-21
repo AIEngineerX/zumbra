@@ -1,6 +1,6 @@
-# Plan — a privacy-first Zcash wallet for humans and agents
+# Plan — Zumbra, a privacy-first Zcash wallet for humans and agents
 
-**Owner:** AIEngineerX · **Started:** 2026-09-20 · **Name:** TBD (starts with Z; decided in §5)
+**Owner:** AIEngineerX · **Started:** 2026-09-20 · **Name:** Zumbra (from *umbra*, the full shadow) · **Repo:** `AIEngineerX/zumbra` (private) · **Dir:** `V:\zumbra`
 **Base:** `atmospherelabs-dev/zipher-app` at `feat/ironwood` `2e7ccd3` (2026-09-11), MIT.
 We are not contributing upstream. This is a hard fork that keeps upstream history and both MIT
 copyright lines, and replaces every upstream default, name and key.
@@ -35,8 +35,8 @@ No dates. Each phase ends when its done-criterion is met and recorded here.
 
 ### Phase 0 — Stage (this commit)
 - Local `main` reset to ironwood, submodule synced, audit + plan + site reference committed.
-- **Done when:** the name is chosen, the GitHub repo exists under that name, and this commit is
-  pushed to it.
+- **Done when:** the GitHub repo exists under the name and this commit plus the naming commit are
+  pushed to it. **Done 2026-09-20.**
 
 ### Phase 1 — Cut and rename
 - Delete `lib/`, `ios/`, `android/`, `macos/`, `assets/`, `l10n.yaml`, `pubspec.*`,
@@ -121,5 +121,5 @@ Short form; the contract is `CLAUDE.md`.
 | 2026-09-20 | Base on `feat/ironwood` `2e7ccd3`, not `main`. | assistant, owner to confirm |
 | 2026-09-20 | Two deliverables: agent wallet first, site second. | owner |
 | 2026-09-20 | Mobile app, Polymarket, FROST, EVM, CipherPay stack out of scope. | assistant, owner to confirm |
-| TBD | Name. Candidates checked 2026-09-20 for GitHub/npm/DNS: see the session notes. | owner |
-| TBD | Own repo vs inside GLASS. | owner |
+| 2026-09-20 | Name: **Zumbra**. Zeus rejected (banking-trojan association, taken everywhere); Zorya rejected (one letter from Zora); Zibet rejected (no privacy meaning). npm and .app/.to free by DNS check. | owner |
+| 2026-09-20 | Fresh private repo `AIEngineerX/zumbra`, not the GitHub fork (forks of public repos cannot be private). Upstream history kept. | owner |

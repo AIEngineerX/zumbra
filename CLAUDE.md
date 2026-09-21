@@ -1,4 +1,4 @@
-# Project contract
+# Zumbra — project contract
 
 > Read `docs/PLAN.md` first. It says what we are building, in what order, and what is cut.
 > `docs/AUDIT-2026-09-20.md` says why the base code cannot be trusted with an agent yet.
@@ -42,7 +42,7 @@ Taken from this codebase and its sibling repos, all of which shipped at least on
 
 ## Git
 
-Remote: `https://github.com/AIEngineerX/<name>.git` (name TBD, see the plan)
+Remote: `https://github.com/AIEngineerX/zumbra.git` · Local: `V:\zumbra`
 Commit as: `AIEngineerX <195990077+AIEngineerX@users.noreply.github.com>`
 Do not use the `github-griffin` identity here. `main` is the trunk; short-lived branches per slice.
 `upstream` remote points at atmospherelabs-dev for reference only. Never push to it.
