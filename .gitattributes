@@ -5,3 +5,7 @@ rust/vendor/zcash_client_sqlite/** linguist-vendored -whitespace
 rust/vendor/zcash_pool_migration/** linguist-vendored -whitespace
 # Unified diffs use a single space for blank context lines.
 rust/vendor/patches/*.patch -whitespace
+
+# Shell scripts and hooks must stay LF so they run on Linux CI and in git-bash.
+*.sh text eol=lf
+.githooks/* text eol=lf

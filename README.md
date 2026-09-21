@@ -1,206 +1,76 @@
-# Zipher
+<p align="center"><img src="brand/dist/readme-banner-1280x320.png" alt="Zumbra — Shielded Zcash for humans and agents" width="100%"></p>
 
-> Making Zcash accessible. For everyone.
+# Zumbra
 
-Zipher is a privacy-first Zcash wallet — for humans and AI agents. One Rust engine, two interfaces: a mobile app for everyday use and a headless CLI + MCP server for autonomous agents. Built with [Open Wallet Standard (OWS)](https://openwallet.sh) for multi-chain signing and [CipherPay](https://cipherpay.app) for private payment infrastructure.
+> Shielded Zcash for humans and agents. Keys on your machine,
+> a spending policy the agent cannot touch.
 
-Built by [Atmosphere Labs](https://atmospherelabs.dev).
+**Status: pre-alpha, not safe to fund.** The code builds a working Zcash light wallet, but the
+agent-safety layer is not finished. Read [`SECURITY.md`](SECURITY.md) for exactly what holds and
+what does not. The running plan is kept privately by the owner; the public summary is there too.
 
-> **OWS Hackathon judges:** Start with [`docs/hackathon-ows.md`](docs/hackathon-ows.md) for the submission narrative, tracks, and demo instructions. The relevant code is in `rust/crates/{engine,cli,mcp-server}`. The mobile app uses the same Rust engine via FFI but is not part of this submission.
+**Zumbra is a fork of [Zipher](https://github.com/atmospherelabs-dev/zipher-app) by Atmosphere
+Labs, MIT-licensed, taken at their `feat/ironwood` branch on 2026-09-20 with full history.**
+We kept their Rust engine, CLI and MCP server, which are good. We are changing the guarantees
+on top: the spending policy and the human approval move to where an agent cannot edit or call
+them, their hosted endpoints and affiliate key come out, and everything that is not the agent
+wallet is switched off. Their copyright line stays in [`LICENSE.md`](LICENSE.md) alongside the
+original YWallet author's and ours; [`NOTICE`](NOTICE) lists every bundled component. We do not
+contribute upstream and we are not affiliated with them.
 
----
+## What it will be
 
-## Why Zcash
+Two things, built in this order:
 
-Zcash is the only production chain with mathematically proven transaction privacy. Not mixers. Not optional privacy. Shielded by default, enforced by zero-knowledge proofs.
+1. **The agent wallet.** A headless Zcash wallet: a Rust engine, a CLI, and an MCP server that any
+   MCP client (Hermes, OpenClaw, Claude, Cursor) can use. The spending policy and the human
+   approval step are enforced by something the agent cannot edit or call. Shielded sends only.
+   No cloud, no custody, no telemetry, no baked-in third-party endpoints.
+2. **A site.** One static page: a single "ask" input over a local knowledge base, a human/agent
+   toggle, and links. No LLM behind it, nothing tracked.
 
-We brought Zcash to the Open Wallet Standard — making it a first-class citizen alongside Ethereum and Solana. Every other OWS wallet and agent uses transparent chains: every transaction, every balance, every counterparty is public. With Zcash on OWS:
+## Scope
 
-- **No one sees the balance** — not competitors, not chain analysts, not MEV bots
-- **No one sees the counterparties** — who it pays, who pays it
-- **No one sees the strategy** — transaction amounts, timing, and destinations are encrypted on-chain
-- **Any chain is reachable** — NEAR Intents bridges ZEC to 140+ assets, so privacy extends to every destination chain
+The mobile app, prediction markets, multi-party wallets, EVM paths and the merchant stack that
+existed in the fork's parent are being removed, not paused. Zumbra is the agent wallet.
 
-This isn't a privacy wrapper on top of a transparent chain. It's the real thing — and now it's available in OWS.
+## Why a fork
 
----
+The parent project shipped the right architecture and a solid Zcash engine. By its own published
+reviews, the agent-safety layer on top was unfinished. We wanted the engine, a different set of
+guarantees on top, and the freedom to narrow scope to the agent wallet. SECURITY.md lists exactly
+what holds today and what does not.
 
-## Mobile home
+## Repository map
 
-Home keeps the Z page's chat interface and routes commands locally without an AI
-model. It supports guided ZEC sends, receive-address selection with QR/copy,
-ZEC-out swap reviews, history and Zcash plus tracked EVM balances. See
-[chat support and verification](docs/chat-home.md) for the exact boundaries.
+| Path | What |
+|---|---|
+| `rust/crates/engine` | Wallet engine: sync, send, policy, audit, vault |
+| `rust/crates/cli` | Headless CLI |
+| `rust/crates/mcp-server` | MCP server over stdio |
+| `rust/crates/rng-compat` | RNG shim required by the vendored Zcash crates |
+| `rust/vendor` | Four patched Zcash wallet crates with SHA-256 provenance |
+| `ows-core` | Open Wallet Standard vault and signer (submodule) |
+| `skills/` | Operator skill file for agent harnesses |
+| `npm/` | npm launcher that downloads and checksum-verifies release binaries |
+| `docs/BRAND.md`, `brand/` | Brand tokens, the mark, and the exporter that generates every asset |
+| `lib/`, `ios/`, `android/`, `assets/` | The parent's Flutter app; switched off, not maintained here |
 
-The shared engine now uses stable wallet libraries adapted to Zakura Common 1.2.0,
-including Ironwood migration storage. The app calls this engine through FFI;
-it does not run the CLI. See the [stack audit](docs/cli-engine-stack-audit.md) for
-the compatibility patches and the [code audit](docs/code-audit-2026-09-09.md) for
-local verification and remaining release acceptance work.
+## Building
 
-## zipher-cli
+Rust stable with `rustfmt` and `clippy`. Crate and binary names still carry the parent's until the
+rename lands; build by path.
 
-Headless, local-first Zcash light wallet for AI agents. No full node. No cloud custody. Keys never leave the machine.
-
-```
-zipher-cli wallet init
-zipher-cli --human balance
-zipher-cli --human polymarket list --keyword bitcoin
-```
-
-- **Light client** — bounded prefetch and adaptive scanning without running a full node; restore time depends on wallet history and hardware
-- **Two-step send** — propose (no seed) then confirm (seed required), safe for agent workflows
-- **Cross-chain swaps** — ZEC to any asset via NEAR Intents (BTC, ETH, SOL, USDT, BNB, 140+ tokens)
-- **Prediction markets** — Polymarket discovery, position lookup, and alpha trade tooling
-- **x402/MPP payments** — `pay_url` auto-detects x402 or MPP paywalls, pays, retries with credential
-- **OWS vault** — `wallet init` stores the mnemonic in the encrypted OWS vault; CLI/MCP decrypt it when needed
-- **Spending policy** — per-tx limits, daily caps, allowlist, rate limiting, approval thresholds
-- **Audit log** — every spend recorded with timestamps, context IDs, and error tracking
-- **Daemon mode** — background sync with IPC socket, kill switch to zeroize seed in memory
-- **Prepaid sessions** — deposit ZEC once via CipherPay, get a bearer token for instant API calls
-- **Pay-per-call API server** — `serve` command starts an HTTP server gating agent tools behind x402 micropayments
-
-## MCP Server — 22 Tools for LLM Orchestration
-
-The MCP server exposes the full agent toolkit over stdio, compatible with Claude, Cursor, and any MCP client. See `mcp-config.example.json` for a ready-to-paste config and `docs/mcp-system-prompt.md` for multi-agent orchestration instructions.
-
-| Domain | Tools |
-|--------|-------|
-| **Wallet** | `wallet_status`, `get_balance`, `validate_address`, `sync_status`, `get_transactions` |
-| **Send** | `propose_send`, `confirm_send`, `shield_funds` |
-| **Payments** | `pay_x402`, `pay_url` |
-| **Swaps** | `swap_tokens`, `swap_quote`, `swap_execute`, `swap_status` |
-| **Sessions** | `session_open`, `session_request`, `session_list`, `session_close` |
-| **Market Agent** | `market_research` (web research for prediction markets, generic) |
-
-The server holds the seed in memory — tools never accept seed as an argument. Policy engine enforces spending limits on every transaction.
-
-## Prediction Markets — Polymarket
-
-Polymarket (Polygon, CLOB, USDC) is the active prediction-market venue. Discovery, position lookup, and alpha bet/sell tooling remain in `zipher-cli polymarket`. They are not part of the mobile home chat; its unused legacy market-action executor was removed.
-
-- **Discovery** — Gamma API event listing with quality filters (volume, spread, distinct outcome prices).
-- **Research** — `market_research` (Firecrawl) for news context; supplies the LLM with a probability-estimate grounding.
-- **Funding** — automatic cross-chain bridge from ZEC → USDC on Polygon via NEAR Intents, then on-chain USDC → USDC.e via ParaSwap. ZEC stays shielded until the exact moment of bridging.
-- **Trade** — CLOB order placement (EIP-712 signature) for limit/market BUY, ERC-1155 `setApprovalForAll` for sells.
-- **Risk** — spending policy enforces per-tx caps and daily limits before any signing.
-
-Earlier builds also targeted Myriad on BSC. That venue was removed in 2026-05 due to thin liquidity and weak AMM UX — the Rust module, FRB surface, CLI subcommand, and MCP tools were deleted in commit `e62c30b`.
-
-## CipherPay — Private Payment Infrastructure
-
-[CipherPay](https://cipherpay.app) is the merchant and verification side of the payment stack. It verifies shielded Zcash payments using Orchard trial decryption — privacy for the payer, certainty for the payee.
-
-- [`@cipherpay/x402`](https://www.npmjs.com/package/@cipherpay/x402) — Express middleware to gate any API behind x402/MPP micropayments with Zcash
-- [`@cipherpay/mcp`](https://www.npmjs.com/package/@cipherpay/mcp) — MCP server with 8 tools for AI-driven payment verification
-
-MCP tools:
-
-| Tool | What it does |
-|------|--------------|
-| `create_invoice` | Create a Zcash payment invoice with ZIP-321 URI |
-| `get_invoice_status` | Check if an invoice has been paid (pending/detected/confirmed) |
-| `verify_payment` | Verify a shielded ZEC payment by txid — for x402/MPP resource servers |
-| `open_session` | Open a prepaid session with deposit txid, get bearer token |
-| `get_session_status` | Check session balance and status |
-| `close_session` | Close session, get usage summary |
-| `get_product_info` | Get product details and pricing |
-| `get_exchange_rates` | Current ZEC/fiat rates (USD, EUR, BRL, GBP, etc.) |
-
-**The full loop:** An agent pays for an API via `pay_url` (zipher side). The API server calls `verify_payment` (CipherPay side) to confirm the shielded ZEC payment landed. No accounts, no API keys, no KYC — just cryptographic proof of payment.
-
----
-
-## Zipher Mobile
-
-Fast, shielded Zcash wallet built for simplicity and privacy. Forked from [YWallet](https://github.com/hhanh00/zwallet) by Hanh Huynh Huu — redesigned with a modern UI, secure architecture, and developer-friendly features.
-
-- **Shielded by Default** — sends from shielded pool only, with one-tap shielding for transparent funds
-- **Cross-Chain Swaps** — swap ZEC to BTC, ETH, SOL and more via NEAR Intents
-- **Secure Seed Storage** — seeds in iOS Keychain / Android Keystore, keys derived in RAM, wiped on close
-- **Multi-Wallet** — manage multiple wallets from a single app, with optional watch-only import
-- **Testnet Mode** — full testnet with integrated faucet, built for developers
-
-**Requirements:** iOS 16.4+ / Android 7.0+
-
----
-
-## Architecture
-
-```
-rust/crates/
-├── engine/              # Shared wallet engine (16 modules)
-│   ├── wallet.rs        # Wallet lifecycle, key derivation, open/close
-│   ├── sync.rs          # lightwalletd sync (Sapling + Orchard)
-│   ├── send.rs          # Transaction construction, PCZT creation
-│   ├── polymarket.rs    # Polymarket CLOB, EIP-712 signing, quality filters
-│   ├── evm.rs           # Shared EVM helpers (RPC, RLP, EIP-1559 fees)
-│   ├── evm_swap.rs      # ParaSwap aggregator client (quote/approve/build/sign)
-│   ├── research.rs      # Firecrawl web search, news agent
-│   ├── swap.rs          # NEAR Intents cross-chain swaps
-│   ├── evm_pay.rs       # Multi-chain EVM x402 detection, cross-chain funding
-│   ├── x402.rs          # x402 payment protocol
-│   ├── mpp.rs           # MPP payment protocol
-│   ├── payment.rs       # Protocol auto-detection (x402 vs MPP)
-│   ├── session.rs       # CipherPay prepaid sessions
-│   ├── policy.rs        # Spending policy engine
-│   ├── audit.rs         # Append-only audit log
-│   ├── vault.rs         # AES-256-GCM encrypted seed storage
-│   ├── query.rs         # Balance, addresses, transactions, viewing keys
-│   └── types.rs         # Shared types
-│
-├── cli/src/             # zipher-cli binary (10 modules)
-│   ├── main.rs          # CLI definitions, config, dispatch
-│   ├── helpers.rs       # Sapling params, vault, seed, sync helpers
-│   ├── wallet.rs        # Wallet/sync/balance/send commands
-│   ├── payment.rs       # x402 + pay_url commands
-│   ├── swap.rs          # Cross-chain swap commands
-│   ├── session.rs       # CipherPay session commands
-│   ├── policy.rs        # Policy + audit commands
-│   ├── daemon.rs        # Background sync daemon with IPC
-│   ├── market.rs        # Polymarket commands (discovery + trade) + OWS signing
-│   └── serve.rs         # Pay-per-call HTTP API with x402 gating
-│
-└── mcp-server/          # MCP server binary (29 tools)
-    └── main.rs          # Tool definitions, server setup
-
-rust/src/                # Flutter Rust Bridge (mobile app FFI)
+```bash
+git clone --recurse-submodules https://github.com/AIEngineerX/zumbra.git
+cd zumbra && bash scripts/setup-hooks.sh
+cd rust/crates/cli && cargo build --locked --release          # the CLI
+cd ../mcp-server && cargo build --locked --release            # the MCP server
 ```
 
-The engine crate is the single source of truth for wallet logic. Every consumer — mobile app, CLI, MCP server — uses the same Rust code for key derivation, proof generation, and transaction construction.
-
-## Built With
-
-- [Open Wallet Standard (OWS)](https://openwallet.sh) — multi-chain wallet and signing (Zcash PCZT + EVM)
-- [librustzcash](https://github.com/zcash/librustzcash) — Zcash protocol libraries and light client SDK
-- [rmcp](https://github.com/anthropics/rmcp) — Model Context Protocol server SDK
-- [NEAR Intents](https://near.org/intents) — cross-chain swap infrastructure
-- [Polymarket](https://polymarket.com) — prediction markets on Polygon (CLOB + Gamma APIs)
-- [ParaSwap](https://paraswap.io) — DEX aggregator for same-chain EVM swaps (USDC.e bridging)
-- [Firecrawl](https://firecrawl.dev) — web search and scraping API
-- [CipherPay](https://cipherpay.app) — Zcash payment infrastructure ([`@cipherpay/x402`](https://www.npmjs.com/package/@cipherpay/x402) middleware, [`@cipherpay/mcp`](https://www.npmjs.com/package/@cipherpay/mcp) server)
-- [Flutter](https://flutter.dev) — mobile UI (iOS & Android)
-
-## Privacy
-
-- No data collection, no analytics, no tracking
-- All data recoverable from seed phrase
-- Customizable `lightwalletd` server URL
-- Shielded pool used by default for all operations
-- Seeds in platform secure storage, keys derived in RAM, wiped on close
-
-Default servers powered by [CipherScan](https://cipherscan.app) infrastructure.
-
-## Ecosystem
-
-| Project | Role | Status |
-|---------|------|--------|
-| **Zipher** | The Wallet — financial privacy, user-friendly | Beta |
-| **zipher-cli** | The Agent Wallet — headless, MCP + OWS | Alpha |
-| **zipher-mcp-server** | LLM orchestration — 22 tools for autonomous agents | Alpha |
-| [**CipherScan**](https://cipherscan.app) | The Explorer — mainnet and testnet | Live |
-| [**CipherPay**](https://cipherpay.app) | The Infrastructure — invoices, x402 verify, sessions | Live |
+Use testnet. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
-[MIT](LICENSE.md)
+MIT. See [`LICENSE.md`](LICENSE.md) for the three copyright lines this code carries and
+[`NOTICE`](NOTICE) for every bundled component and where it came from.

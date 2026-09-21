@@ -1,0 +1,64 @@
+Zumbra
+Copyright (c) 2026 AIEngineerX
+
+Zumbra is a hard fork. This file lists what it is derived from and every bundled
+component whose license or origin a user would want to know. It does not describe
+the whole product as "100% open source"; it lists the facts.
+
+---
+
+## Derived from
+
+**Zipher** — https://github.com/atmospherelabs-dev/zipher-app
+MIT License, Copyright (c) 2025-2026 Atmosphere Labs LLC.
+Forked at branch feat/ironwood, commit 2e7ccd3 (2026-09-11). Git history is retained.
+
+**YWallet** — Copyright (c) 2023 Hanh Huynh Huu. MIT License.
+Zipher itself began as a YWallet derivative; that copyright line is retained in LICENSE.md.
+
+Both notices are permanent. Zumbra's own modifications are Copyright (c) 2026 AIEngineerX,
+MIT License.
+
+---
+
+## Bundled as a git submodule
+
+**Open Wallet Standard core (`ows-core/`)** — https://github.com/Kenbak/core
+MIT License. Pinned to commit ede3e58. Provides the encrypted vault (scrypt + AES-256-GCM)
+and the signer used by the CLI and MCP server. This is a personal fork of the OWS core repo,
+not the organisation's; Zumbra will pin or vendor it after review.
+
+---
+
+## Vendored with local patches (`rust/vendor/`)
+
+Four crates from the Zcash wallet SDK, retained with their upstream licenses (MIT OR Apache-2.0)
+and patched only as recorded in `rust/vendor/patches/*.patch`. Source archive URLs and SHA-256
+checksums are in `rust/vendor/sources.json`.
+
+- zcash_client_backend 0.24.0
+- zcash_client_sqlite 0.22.0
+- zcash_pool_migration 0.1.0
+- pczt 0.9.3
+
+The patches rename cryptography dependencies to the `zakura-*` 1.2.0 crate family and route RNG
+calls through the `rng-compat` crate. No proving circuit, key derivation, transaction encoding,
+or migration policy is rewritten. The `zakura-*` crates are consumed from crates.io under the
+license recorded in each crate's own metadata; `cargo deny` in CI enforces the allowed set.
+
+---
+
+## Network resources
+
+- **Sapling parameters** are downloaded from download.z.cash on first use and verified against
+  pinned SHA-256 hashes before they are used.
+- **lightwalletd / Zaino servers** are chosen by the operator. Zumbra ships no default operator
+  endpoint after the rename; the light client protocol reveals your IP and transparent addresses to
+  whichever server you choose. Shielded viewing keys never leave the machine.
+
+---
+
+## Names
+
+"Zcash" is a trademark of the Electric Coin Company / Zcash community. Zumbra is an independent
+project and is not affiliated with or endorsed by Zcash, Atmosphere Labs, or Nous Research.
