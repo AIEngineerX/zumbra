@@ -3,7 +3,11 @@
 All notable changes to Zumbra. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/). Nothing has been released yet.
 
-## [Unreleased]
+## [0.3.0] - 2026-09-21
+
+First public build: tag `cli-v0.3.0`, binaries for Linux (x64, arm64) and macOS (Intel, Apple
+Silicon) with SHA-256 files. Pre-alpha, for the testnet testing round. Everything below shipped
+in it.
 
 ### Added
 - Fork of Zipher (MIT) at its `feat/ironwood` branch, 2026-09-20, with full history and both

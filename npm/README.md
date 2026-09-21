@@ -1,9 +1,10 @@
 # zumbra
 
 Headless Zcash light wallet for AI agents. Shielded sends, a spending policy the agent cannot
-edit, and an MCP server. Pre-alpha: binaries are not published yet; build from source.
+edit, and an MCP server. Pre-alpha: binaries are on the GitHub releases page; this npm package
+is not published to npmjs yet, so `npm install -g zumbra` does not work until it is.
 
-## Install (when releases exist)
+## Install (once the package is on npmjs)
 
 ```bash
 npm install -g zumbra
