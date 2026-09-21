@@ -66,7 +66,7 @@ what holds today and what does not.
 ## Building
 
 Prebuilt binaries for Linux and macOS, each with a SHA-256 file beside it, are on the
-[releases page](https://github.com/AIEngineerX/zumbra/releases/tag/cli-v0.3.0); [`docs/QUICKSTART.md`](docs/QUICKSTART.md) shows the verify-and-install
+[releases page](https://github.com/AIEngineerX/zumbra/releases/tag/cli-v0.3.1); [`docs/QUICKSTART.md`](docs/QUICKSTART.md) shows the verify-and-install
 lines. To build instead: Rust stable with `rustfmt` and `clippy`, plus `protoc`, `cmake`,
 `pkg-config` and OpenSSL headers. Linux or macOS; on Windows use WSL (the daemon uses Unix sockets and there is no
 Windows binary).

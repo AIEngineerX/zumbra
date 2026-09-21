@@ -1,6 +1,6 @@
 {
   "name": "zumbra",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Headless Zcash wallet for AI agents: CLI + MCP server, shielded by default",
   "license": "MIT",
   "repository": {

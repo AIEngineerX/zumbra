@@ -3,6 +3,12 @@
 All notable changes to Zumbra. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/). Nothing has been released yet.
 
+## [0.3.1] - 2026-09-21
+
+Re-release with the MCP capability fix below: the 0.3.0 server connected to real MCP clients
+but advertised no tools, so agents saw none. Also: the operator approval channel, a default
+policy that leaves room for approvals, and the rollback and hook fixes.
+
 ## [0.3.0] - 2026-09-21
 
 First public build: tag `cli-v0.3.0`, binaries for Linux (x64, arm64) and macOS (Intel, Apple

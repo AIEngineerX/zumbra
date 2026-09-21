@@ -7,12 +7,12 @@ Amounts are in zatoshi throughout: 1 ZEC = 100 000 000 zat, so `1000000` is 0.01
 ## 0. Get the binaries
 
 Prebuilt for Linux (x64, arm64) and macOS (Intel, Apple Silicon) on the
-[releases page](https://github.com/AIEngineerX/zumbra/releases/tag/cli-v0.3.0). Each file ships with a `.sha256` next to it; check it before running
+[releases page](https://github.com/AIEngineerX/zumbra/releases/tag/cli-v0.3.1). Each file ships with a `.sha256` next to it; check it before running
 anything, then put `zumbra` and `zumbra-mcp` on your PATH:
 
 ```bash
-curl -LO https://github.com/AIEngineerX/zumbra/releases/download/cli-v0.3.0/zumbra-linux-x64
-curl -LO https://github.com/AIEngineerX/zumbra/releases/download/cli-v0.3.0/zumbra-linux-x64.sha256
+curl -LO https://github.com/AIEngineerX/zumbra/releases/download/cli-v0.3.1/zumbra-linux-x64
+curl -LO https://github.com/AIEngineerX/zumbra/releases/download/cli-v0.3.1/zumbra-linux-x64.sha256
 sha256sum -c zumbra-linux-x64.sha256 && chmod +x zumbra-linux-x64 && mv zumbra-linux-x64 ~/.local/bin/zumbra
 # same for zumbra-mcp-linux-x64; on macOS use shasum -a 256 -c and the darwin-* files
 ```
