@@ -60,7 +60,7 @@ jobs:
         run: node --test ../npm/test/*.test.js
 
       - name: Run unit tests
-        run: cargo test --locked --workspace --exclude rust_lib_zumbra
+        run: cargo test --locked --workspace
 
       - name: Build CLI (release)
         run: cargo build --locked --release -p zumbra

@@ -13,7 +13,7 @@ cd zumbra
 bash scripts/setup-hooks.sh        # installs the pre-commit secret block (once per clone)
 cd rust
 cargo build --locked --release -p zumbra -p zumbra-mcp
-cargo test --locked --workspace --exclude rust_lib_zumbra
+cargo test --locked --workspace
 ```
 
 Rust stable with `rustfmt` and `clippy` (see `rust/rust-toolchain.toml`). `gitleaks` and

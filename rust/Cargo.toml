@@ -1,40 +1,6 @@
 [workspace]
 members = ["crates/engine", "crates/cli", "crates/mcp-server", "crates/rng-compat"]
-
-[package]
-name = "rust_lib_zumbra"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-crate-type = ["cdylib", "staticlib"]
-
-[dependencies]
-zumbra-engine = { path = "crates/engine" }
-flutter_rust_bridge = "=2.11.1"
-anyhow = "1"
-tracing = "0.1"
-hex = "0.4"
-serde_json = "1"
-tokio = { version = "1", features = ["full"] }
-
-# Shared stable wallet layer and Zakura Common cryptography
-zcash_protocol = { workspace = true }
-zcash_address = { workspace = true }
-zcash_client_backend = { workspace = true, features = ["lightwalletd-tonic", "transparent-inputs", "tor"] }
-bip0039 = { version = "0.14", features = ["rand"] }
-
-zcash_pool_migration = { workspace = true }
-secrecy = "0.8"
-orchard = { workspace = true }
-
-tracing-subscriber = { version = "0.3", features = ["fmt"] }
-
-[features]
-dart_ffi = []
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
+resolver = "2"
 
 [profile.dev]
 opt-level = 1

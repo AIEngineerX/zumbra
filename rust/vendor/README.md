@@ -31,7 +31,7 @@ Verification commands from `rust/`:
 ```sh
 cargo metadata --locked --format-version 1 > target/wallet-stack.json
 python3 ../scripts/verify-wallet-stack.py target/wallet-stack.json
-cargo check --locked -p rust_lib_zumbra -p zumbra -p zumbra-mcp
+cargo check --locked -p the removed Flutter bridge crate -p zumbra -p zumbra-mcp
 cargo test --locked -p zumbra-engine -p zumbra-rng-compat --tests
 ```
 
