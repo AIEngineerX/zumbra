@@ -778,35 +778,6 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
     Ok(())
 }
 
-pub async fn cmd_store_signed_pczt(cfg: &Config, pczt_hex: String) -> Result<()> {
-    let pczt_bytes = hex::decode(&pczt_hex).map_err(|e| anyhow::anyhow!("Invalid hex: {}", e))?;
-
-    ensure_data_dir(&cfg.data_dir)?;
-    auto_open(cfg).await?;
-
-    if cfg.human {
-        eprintln!(
-            "Storing signed PCZT in wallet DB ({} bytes)...",
-            pczt_bytes.len()
-        );
-    }
-
-    let txid = zumbra_engine::send::store_signed_pczt(&pczt_bytes).await?;
-
-    #[derive(Serialize)]
-    struct StorePcztResult {
-        txid: String,
-    }
-
-    print_ok(StorePcztResult { txid: txid.clone() }, cfg.human, |r| {
-        println!("Transaction stored: {}", r.txid);
-        println!("Notes marked as spent — safe to create new PCZTs.");
-    });
-
-    zumbra_engine::wallet::close().await;
-    Ok(())
-}
-
 // ---------------------------------------------------------------------------
 // Ironwood pool transfer (ZIP 318)
 // ---------------------------------------------------------------------------

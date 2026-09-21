@@ -150,33 +150,7 @@ struct PayX402Params {
     context_id: Option<String>,
 }
 
-#[derive(Deserialize, JsonSchema)]
-struct PayUrlParams {
-    /// The URL to pay for (will auto-detect x402 or MPP protocol)
-    url: String,
-    /// HTTP method (GET, POST, PUT). Defaults to GET.
-    method: Option<String>,
-    /// Context identifier for audit trail
-    context_id: Option<String>,
-}
-
-
-
-
-
-
-
-
-
-
-// --- Polymarket params ---
-
-
-
-
-
 // --- Voting params ---
-
 #[derive(Deserialize, JsonSchema)]
 struct VoteEligibilityParams {
     /// Snapshot height for the vote round
@@ -203,20 +177,6 @@ struct IronwoodPauseParams {}
 
 #[derive(Deserialize, JsonSchema)]
 struct IronwoodResumeParams {}
-
-// --- HITL params ---
-
-
-#[derive(Deserialize, JsonSchema)]
-#[allow(dead_code)]
-struct HitlDecideParams {
-    /// The approval ID to decide on
-    approval_id: String,
-    /// Whether to approve (true) or reject (false)
-    approved: bool,
-    /// Optional rejection reason
-    reason: Option<String>,
-}
 
 // ---------------------------------------------------------------------------
 // MCP Server state
@@ -716,29 +676,23 @@ impl ServerHandler for ZumbraMcpServer {
         let mut info = rmcp::model::Implementation::from_build_env();
         info.name = "zumbra-mcp".into();
         info.version = env!("CARGO_PKG_VERSION").into();
-        info.title = Some("Zumbra — Shielded Wallet for AI Agents".into());
-        info.description = Some("Headless Zcash wallet with encrypted vault, spending policies, and x402 paywall access".into());
-        info.website_url = Some("https://zumbra.app".into());
+        info.title = Some("Zumbra — Shielded Zcash for humans and agents".into());
+        info.description = Some("Headless Zcash wallet with encrypted vault, spending policy, and x402 paywall access".into());
+        info.website_url = Some("https://github.com/AIEngineerX/zumbra".into());
 
         ServerInfo::default()
             .with_server_info(info)
             .with_instructions(
-                "Zumbra: headless Zcash wallet + multi-chain agent toolkit for AI. \
-                 Seed is secured in an encrypted vault (OWS or Zumbra) — never pass it as a tool argument. \
-                 wallet_lock clears access; only a trusted operator restart can unlock. Threshold payments require the operator CLI, not an MCP approval tool. \
-                 Paid APIs: pay_url auto-detects x402/MPP, pays, returns response. \
-                 Cross-chain: swap_execute converts ZEC to any asset via Near Intents. \
-                 EVM: evm_balances shows token holdings; sweep_quote previews bridging back to ZEC. \
-                 Prediction markets: polymarket_discover finds markets, polymarket_positions shows bets, order signing is unavailable until per-asset operator authorization is implemented. \
+                "Zumbra: headless shielded Zcash wallet for AI agents. \
+                 The seed lives in an encrypted vault on this machine; never pass it as a tool argument. \
+                 Sends are two-step: propose_send, then confirm_send. The operator's spending policy runs before anything is signed and cannot be changed from here. \
+                 Above the approval threshold, confirm_send waits for the operator; there is no MCP approval tool. \
+                 wallet_lock clears the seed from memory; only an operator restart can bring it back. \
+                 pay_x402 pays an x402 paywall from a 402 response body, within the same policy. \
                  Governance voting is unavailable in this version."
             )
     }
 }
-
-// ---------------------------------------------------------------------------
-// Swap helpers
-// ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Configuration
