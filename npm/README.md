@@ -89,9 +89,9 @@ anything.
 Default policy written by `wallet init`:
 
 ```toml
-max_per_tx = 1000000          # 0.01 ZEC per transaction
+max_per_tx = 5000000          # 0.05 ZEC per transaction; above this, refused
 daily_limit = 10000000        # 0.1 ZEC per rolling day
-approval_threshold = 5000000  # 0.05 ZEC: above this the operator must approve
+approval_threshold = 1000000  # 0.01 ZEC; above this, the operator signs it
 allowlist = []                # empty = any address; set it
 ```
 

@@ -176,9 +176,9 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
 /// is never unlimited.
 pub fn default_policy() -> zumbra_engine::policy::SpendingPolicy {
     zumbra_engine::policy::SpendingPolicy {
-        max_per_tx: 1_000_000,         // 0.01 ZEC
-        daily_limit: 10_000_000,       // 0.1 ZEC
-        approval_threshold: 5_000_000, // 0.05 ZEC
+        max_per_tx: 5_000_000,         // 0.05 ZEC: above this, refused outright
+        daily_limit: 10_000_000,       // 0.1 ZEC per rolling day
+        approval_threshold: 1_000_000, // 0.01 ZEC: above this, the operator signs
         require_context_id: false,
         min_spend_interval_ms: 0,
         allowlist: Vec::new(),
@@ -1309,6 +1309,17 @@ mod restore_tests {
         let (_again, created_again) = open_or_create_vault_seed("fresh", "pass", Some(&vault)).unwrap();
         assert!(created_again, "the next init reused a seed instead of creating one");
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// A default where the approval threshold sits above the per-transaction cap can never ask
+    /// the operator for anything: the cap refuses first. The defaults must leave a band where a
+    /// send is allowed only with an approval.
+    #[test]
+    fn default_policy_leaves_room_for_an_approval() {
+        let p = default_policy();
+        assert!(p.approval_threshold > 0 && p.approval_threshold < p.max_per_tx,
+            "approval_threshold {} must be below max_per_tx {}", p.approval_threshold, p.max_per_tx);
+        assert!(p.max_per_tx <= p.daily_limit);
     }
 
     /// If the network step after staging fails, nothing may be left behind: otherwise the next

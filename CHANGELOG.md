@@ -41,6 +41,11 @@ in it.
   `proposal_id` and a `next_step` telling it what the operator must run; it has no tool to
   approve. Tests on the engine, the CLI gate and the MCP gate, with mutation checks.
 
+### Changed
+- Default policy: `max_per_tx` 0.05 ZEC, `approval_threshold` 0.01 ZEC (was 0.01 and 0.05, a
+  threshold above the cap, so the approval step could never trigger on a fresh wallet).
+  `daily_limit` stays 0.1 ZEC. Test.
+
 ### Security
 - `wallet restore` takes the seed phrase on stdin instead of argv, stores it only in the
   encrypted OWS vault instead of a plaintext `.seed` file, refuses to overwrite an existing vault

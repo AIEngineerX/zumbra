@@ -136,9 +136,9 @@ render(doc(1600, 900,
   mono(96, 300, 20, "THE POLICY IS A FILE YOU WRITE. THE AGENT HAS NO TOOL FOR IT.", MIST) +
   mono(96, 380, 22, "$ cat ~/.zumbra/testnet/policy.toml", GOLD) +
   [
-    "max_per_tx = 1000000          # 0.01 ZEC",
+    "max_per_tx = 5000000          # 0.05 ZEC, above: refused",
     "daily_limit = 10000000        # 0.1 ZEC per rolling day",
-    "approval_threshold = 5000000  # above this, you sign it",
+    "approval_threshold = 1000000  # 0.01 ZEC, above: you sign it",
     "min_spend_interval_ms = 0",
     "require_context_id = false",
     "allowlist = []                # empty = any shielded address",
