@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- F. Eclipse cat, ring. The corona is a thin ring; the cat's head sits inside it as the umbra,
+       ears breaking the ring, slit eyes lit. On a dark ground: a ring, two ear notches, two eyes. -->
+  <defs>
+    <mask id="head">
+      <rect width="512" height="512" fill="#fff"/>
+      <circle cx="236" cy="276" r="176" fill="#000"/>
+      <polygon points="118,168 100,52 214,104" fill="#000"/>
+      <polygon points="354,168 372,52 258,104" fill="#000"/>
+    </mask>
+  </defs>
+  <circle cx="256" cy="256" r="206" fill="none" stroke="#F2C14E" stroke-width="14" mask="url(#head)"/>
+  <g fill="#0B0D12">
+    <circle cx="236" cy="276" r="176"/>
+    <polygon points="118,168 100,52 214,104"/>
+    <polygon points="354,168 372,52 258,104"/>
+  </g>
+  <g fill="#F2C14E">
+    <ellipse cx="184" cy="266" rx="11" ry="34" transform="rotate(-8 184 266)"/>
+    <ellipse cx="288" cy="266" rx="11" ry="34" transform="rotate(8 288 266)"/>
+  </g>
+</svg>

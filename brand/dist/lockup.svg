@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="160" viewBox="0 0 720 160"><g transform="translate(0 8) scale(0.28125)">
+  <!-- A. Negative Z. The disc is the corona; the Z is cut out of it as true negative space. -->
+  <defs>
+    <mask id="z">
+      <rect width="512" height="512" fill="#fff"/>
+      <path d="M150 170H362L150 342H362" fill="none" stroke="#000" stroke-width="52" stroke-linejoin="miter" stroke-miterlimit="6"/>
+    </mask>
+  </defs>
+  <circle cx="256" cy="256" r="200" fill="#F2C14E" mask="url(#z)"/>
+</g><text x="176" y="112" font-family="Inter" font-weight="800" font-size="96" letter-spacing="15.36" fill="#F4F1EA"><tspan fill="#F2C14E">Z</tspan>UMBRA</text></svg>

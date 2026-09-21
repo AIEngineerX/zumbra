@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- E. Eclipse cat. A black cat's head is the umbra crossing the disc: one circle, two triangles,
+       two slit eyes. On a dark ground only the crescent, the ear bites and the eyes remain. -->
+  <circle cx="256" cy="256" r="200" fill="#F2C14E"/>
+  <g fill="#0B0D12">
+    <circle cx="236" cy="276" r="176"/>
+    <polygon points="118,168 100,52 214,104"/>
+    <polygon points="354,168 372,52 258,104"/>
+  </g>
+  <g fill="#F2C14E">
+    <ellipse cx="184" cy="266" rx="11" ry="34" transform="rotate(-8 184 266)"/>
+    <ellipse cx="288" cy="266" rx="11" ry="34" transform="rotate(8 288 266)"/>
+  </g>
+</svg>

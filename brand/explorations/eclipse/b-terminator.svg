@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- B. Terminator. The Z's diagonal is the shadow's edge across the disc; the bars alternate lit/dark. -->
+  <defs>
+    <clipPath id="disc"><circle cx="256" cy="256" r="200"/></clipPath>
+  </defs>
+  <g clip-path="url(#disc)">
+    <circle cx="256" cy="256" r="200" fill="#1A1F2B"/>
+    <polygon points="-62,514 574,-2 -200,-2" fill="#F2C14E"/>
+    <rect x="150" y="150" width="212" height="52" fill="#1A1F2B"/>
+    <rect x="150" y="310" width="212" height="52" fill="#F2C14E"/>
+  </g>
+</svg>
