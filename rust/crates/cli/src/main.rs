@@ -5,15 +5,9 @@ use zcash_protocol::consensus::Network;
 
 mod benchmark;
 mod daemon;
-mod evm_swap;
-mod frost;
 mod helpers;
-mod market;
 mod payment;
 mod policy;
-mod serve;
-mod session;
-mod swap;
 mod wallet;
 
 // ---------------------------------------------------------------------------
@@ -109,232 +103,21 @@ enum Commands {
     #[command(subcommand)]
     X402(X402Cmd),
 
-    /// Pay any 402 paywall by URL (auto-detects x402 or MPP protocol)
-    Pay {
-        /// The URL to pay for
-        url: String,
 
-        /// Context identifier for audit trail
-        #[arg(long)]
-        context_id: Option<String>,
 
-        /// HTTP method to use (default: GET)
-        #[arg(long, default_value = "GET")]
-        method: String,
-    },
 
-    /// Cross-chain swaps via Near Intents
-    #[command(subcommand)]
-    Swap(SwapCmd),
 
-    /// Session-based payments (prepaid credit via CipherPay)
-    #[command(subcommand)]
-    Session(SessionCmd),
 
-    /// Polymarket discovery via Gamma API (read-only; no wallet)
-    #[command(subcommand)]
-    Polymarket(PolymarketCmd),
 
-    /// FROST threshold wallet utilities
-    #[command(subcommand)]
-    Frost(FrostCmd),
 
-    /// Start a paid HTTP API server (x402 pay-per-call)
-    Serve {
-        /// Port to listen on
-        #[arg(long, default_value = "8402")]
-        port: u16,
-
-        /// Price per API call in zatoshis (default: 10000 = 0.0001 ZEC)
-        #[arg(long)]
-        price: Option<u64>,
-
-        /// Bind address. Defaults to 127.0.0.1 so the server is only
-        /// reachable from localhost. Pass `0.0.0.0` to expose externally
-        /// — only do this on a host you trust and behind a real reverse
-        /// proxy with TLS.
-        #[arg(long, default_value = "127.0.0.1")]
-        listen: String,
-
-        /// Run without CipherPay payment verification. Without this flag
-        /// the server will refuse to start unless `CIPHERPAY_API_KEY` is
-        /// set. This avoids the previous default of silently accepting
-        /// any payment signature — a real revenue / safety bypass for
-        /// anyone running `serve` without realizing what mode they were
-        /// in. Audit finding H9 (2026-05-18).
-        #[arg(long)]
-        demo_accept_unverified: bool,
-    },
-
-    /// Sweep remaining funds from an EVM chain back to shielded ZEC
-    Sweep {
-        /// Token symbol to sweep (e.g., USDC, USDT)
-        #[arg(long)]
-        token: String,
-
-        /// Chain to sweep from (e.g., base, bsc)
-        #[arg(long)]
-        chain: String,
-
-        /// OWS wallet name for EVM signing
-        #[arg(long, default_value = "default")]
-        ows_wallet: String,
-    },
-
-    /// Same-chain EVM token swap via ParaSwap (DEX aggregator)
-    EvmSwap {
-        /// Chain name: polygon, bsc, ethereum, base, arbitrum
-        #[arg(long)]
-        chain: Option<String>,
-
-        /// Source token symbol or address (interactive if omitted)
-        #[arg(long)]
-        from: Option<String>,
-
-        /// Destination token symbol or address (interactive if omitted)
-        #[arg(long)]
-        to: Option<String>,
-
-        /// Amount to swap (human-readable, e.g. "1.5") or "max"
-        #[arg(long)]
-        amount: Option<String>,
-
-        /// Slippage tolerance in basis points (default: 200 = 2%)
-        #[arg(long, default_value = "200")]
-        slippage: u32,
-
-        /// Skip confirmation prompt
-        #[arg(long)]
-        yes: bool,
-
-        /// OWS wallet name for EVM signing
-        #[arg(long, env = "OWS_WALLET", default_value = "default")]
-        ows_wallet: String,
-    },
 
     /// Ironwood pool transfer — migrate Orchard funds per ZIP 318
     #[command(subcommand)]
     Ironwood(IronwoodCmd),
 
-    /// Pair with a Zumbra mobile wallet for agent approval relay
-    Pair {
-        /// Device name for the mobile wallet
-        #[arg(long, default_value = "mobile")]
-        device_name: String,
-        /// Override relay URL
-        #[arg(long)]
-        relay_url: Option<String>,
-    },
 }
 
-#[derive(Subcommand)]
-enum SwapCmd {
-    /// List available swap tokens
-    Tokens,
 
-    /// Get a swap quote (ZEC to another asset)
-    Quote {
-        /// Destination asset symbol (e.g., USDC, ETH, BTC)
-        #[arg(long)]
-        to: String,
-
-        /// Destination blockchain (e.g., eth, sol, arb). Auto-detected if unambiguous.
-        #[arg(long)]
-        chain: Option<String>,
-
-        /// Amount in zatoshis to swap
-        #[arg(long)]
-        amount: u64,
-
-        /// Recipient address on the destination chain
-        #[arg(long)]
-        recipient: String,
-
-        /// Slippage tolerance in basis points (default: 100 = 1%)
-        #[arg(long, default_value = "100")]
-        slippage: u32,
-    },
-
-    /// Execute a swap (get quote + send ZEC to deposit address)
-    Execute {
-        /// Destination asset symbol (e.g., USDC, ETH, BTC)
-        #[arg(long)]
-        to: String,
-
-        /// Destination blockchain (e.g., eth, sol, arb)
-        #[arg(long)]
-        chain: Option<String>,
-
-        /// Amount in zatoshis to swap
-        #[arg(long)]
-        amount: u64,
-
-        /// Recipient address on the destination chain
-        #[arg(long)]
-        recipient: String,
-
-        /// Slippage tolerance in basis points (default: 100 = 1%)
-        #[arg(long, default_value = "100")]
-        slippage: u32,
-
-        /// Context identifier for audit trail
-        #[arg(long)]
-        context_id: Option<String>,
-    },
-
-    /// Check swap status by deposit address
-    Status {
-        /// The deposit address from the swap quote
-        #[arg(long)]
-        deposit_address: String,
-    },
-}
-
-#[derive(Subcommand)]
-enum SessionCmd {
-    /// Open a new session (pay once, get bearer token for many requests)
-    Open {
-        /// Server URL to create a session for
-        #[arg(long)]
-        server_url: String,
-
-        /// Amount in zatoshis to deposit as credit
-        #[arg(long)]
-        deposit: u64,
-
-        /// Merchant ID on CipherPay
-        #[arg(long)]
-        merchant_id: String,
-
-        /// Merchant's Zcash payment address
-        #[arg(long)]
-        pay_to: String,
-
-        /// Context identifier for audit trail
-        #[arg(long)]
-        context_id: Option<String>,
-    },
-
-    /// Make a request using an active session
-    Request {
-        /// URL to request
-        url: String,
-
-        /// HTTP method (default: GET)
-        #[arg(long, default_value = "GET")]
-        method: String,
-    },
-
-    /// List active sessions
-    List,
-
-    /// Close a session
-    Close {
-        /// Session ID to close
-        #[arg(long)]
-        session_id: String,
-    },
-}
 
 #[derive(Subcommand)]
 enum WalletCmd {
@@ -500,71 +283,6 @@ enum DaemonCmd {
     Unlock,
 }
 
-#[derive(Subcommand)]
-enum PolymarketCmd {
-    /// List top events with quality filters (grouped multi-outcome events)
-    List {
-        /// Optional tag / keyword (Gamma `tag` query)
-        #[arg(long)]
-        keyword: Option<String>,
-
-        /// Max events to fetch from Gamma
-        #[arg(long, default_value = "20")]
-        limit: u32,
-
-        /// Disable quality filters (show illiquid / edge markets too)
-        #[arg(long)]
-        all: bool,
-    },
-
-    /// Show one market by condition id (0x…)
-    Show {
-        /// Polymarket condition id (hex)
-        condition_id: String,
-    },
-
-    /// List open Polymarket positions for a Polygon address (Data API; read-only)
-    Positions {
-        /// Wallet address (0x + 40 hex) — Polygon account that holds positions
-        user: String,
-    },
-
-    /// Test V2 CLOB order flow: L1 auth → sign → POST (uses wallet seed)
-    TestOrder {
-        /// CLOB token ID for the outcome to bet on
-        token_id: String,
-        /// USD amount to bet
-        #[arg(long, default_value = "5.0")]
-        amount: f64,
-        /// Price per share (e.g. 0.35 for 35%)
-        #[arg(long)]
-        price: f64,
-        /// BUY or SELL
-        #[arg(long, default_value = "BUY")]
-        side: String,
-        /// Use neg-risk exchange
-        #[arg(long)]
-        neg_risk: bool,
-    },
-
-    /// Full on-chain bet: approve USDC.e → wrap pUSD → approve exchange → sign & post
-    FullBet {
-        /// CLOB token ID for the outcome to bet on
-        token_id: String,
-        /// USD amount to bet
-        #[arg(long, default_value = "5.0")]
-        amount: f64,
-        /// Price per share (e.g. 0.35 for 35%)
-        #[arg(long)]
-        price: f64,
-        /// BUY or SELL
-        #[arg(long, default_value = "BUY")]
-        side: String,
-        /// Use neg-risk exchange
-        #[arg(long)]
-        neg_risk: bool,
-    },
-}
 
 #[derive(Subcommand)]
 enum X402Cmd {
@@ -591,47 +309,6 @@ enum X402Cmd {
     },
 }
 
-#[derive(Subcommand)]
-enum FrostCmd {
-    /// Run a local 2-of-3 DKG + signing + aggregate self-test
-    SelfTest,
-    /// Smoke-test frostd challenge/login/session over HTTPS
-    RelaySmoke {
-        /// Relay URL
-        #[arg(long, default_value = "https://frost.atmospherelabs.dev")]
-        relay: String,
-    },
-    /// Create a local FROST Orchard viewing wallet from simulated DKG
-    WalletCreate {
-        /// Wallet birthday height
-        #[arg(long)]
-        birthday: u32,
-    },
-    /// Spend from a FROST watch-only wallet using two local key packages
-    Spend {
-        /// Destination Zcash address
-        #[arg(long)]
-        to: String,
-        /// Amount in zatoshis
-        #[arg(long)]
-        amount: u64,
-        /// First signer key package
-        #[arg(long)]
-        key1: String,
-        /// Second signer key package
-        #[arg(long)]
-        key2: String,
-        /// FROST public key package from wallet-create
-        #[arg(long)]
-        public_key_package: String,
-        /// Optional memo
-        #[arg(long)]
-        memo: Option<String>,
-        /// Broadcast after signing
-        #[arg(long)]
-        broadcast: bool,
-    },
-}
 
 #[derive(Subcommand)]
 enum IronwoodCmd {
@@ -846,52 +523,11 @@ async fn main() {
                 payment::cmd_x402_pay(&cfg, body, context_id).await
             }
         },
-        Commands::Pay {
-            url,
-            context_id,
-            method,
-        } => payment::cmd_pay(&cfg, url, context_id, method).await,
-        Commands::Swap(sub) => match sub {
-            SwapCmd::Tokens => swap::cmd_swap_tokens(&cfg).await,
-            SwapCmd::Quote {
-                to,
-                chain,
-                amount,
-                recipient,
-                slippage,
-            } => swap::cmd_swap_quote(&cfg, to, chain, amount, recipient, slippage).await,
-            SwapCmd::Execute {
-                to,
-                chain,
-                amount,
-                recipient,
-                slippage,
-                context_id,
-            } => {
-                swap::cmd_swap_execute(&cfg, to, chain, amount, recipient, slippage, context_id)
-                    .await
             }
             SwapCmd::Status { deposit_address } => {
                 swap::cmd_swap_status(&cfg, deposit_address).await
             }
         },
-        Commands::Session(sub) => match sub {
-            SessionCmd::Open {
-                server_url,
-                deposit,
-                merchant_id,
-                pay_to,
-                context_id,
-            } => {
-                session::cmd_session_open(
-                    &cfg,
-                    server_url,
-                    deposit,
-                    merchant_id,
-                    pay_to,
-                    context_id,
-                )
-                .await
             }
             SessionCmd::Request { url, method } => {
                 session::cmd_session_request(&cfg, url, method).await
@@ -899,14 +535,6 @@ async fn main() {
             SessionCmd::List => session::cmd_session_list(&cfg).await,
             SessionCmd::Close { session_id } => session::cmd_session_close(&cfg, session_id).await,
         },
-        Commands::Polymarket(sub) => match sub {
-            PolymarketCmd::List {
-                keyword,
-                limit,
-                all,
-            } => market::cmd_polymarket_list(&cfg, keyword, limit, all).await,
-            PolymarketCmd::Show { condition_id } => {
-                market::cmd_polymarket_show(&cfg, condition_id).await
             }
             PolymarketCmd::Positions { user } => market::cmd_polymarket_positions(&cfg, user).await,
             PolymarketCmd::TestOrder {
@@ -929,11 +557,6 @@ async fn main() {
                 market::cmd_polymarket_full_bet(&cfg, token_id, amount, price, side, neg_risk).await
             }
         },
-        Commands::Frost(sub) => match sub {
-            FrostCmd::SelfTest => frost::cmd_frost_self_test(&cfg).await,
-            FrostCmd::RelaySmoke { relay } => frost::cmd_frost_relay_smoke(&cfg, relay).await,
-            FrostCmd::WalletCreate { birthday } => {
-                frost::cmd_frost_wallet_create(&cfg, birthday).await
             }
             FrostCmd::Spend {
                 to,
@@ -957,29 +580,7 @@ async fn main() {
                 .await
             }
         },
-        Commands::Serve {
-            port,
-            price,
-            listen,
-            demo_accept_unverified,
-        } => {
-            serve::cmd_serve(&cfg, port, price, listen, demo_accept_unverified).await;
-            Ok(())
         }
-        Commands::Sweep {
-            token,
-            chain,
-            ows_wallet,
-        } => payment::cmd_sweep(&cfg, token, chain, ows_wallet).await,
-        Commands::EvmSwap {
-            chain,
-            from,
-            to,
-            amount,
-            slippage,
-            yes,
-            ows_wallet,
-        } => evm_swap::cmd_evm_swap(&cfg, chain, from, to, amount, slippage, yes, ows_wallet).await,
         Commands::Ironwood(sub) => match sub {
             IronwoodCmd::Plan => wallet::cmd_ironwood_plan(&cfg).await,
             IronwoodCmd::Confirm { tor } => wallet::cmd_ironwood_confirm(&cfg, tor).await,
@@ -987,34 +588,6 @@ async fn main() {
             IronwoodCmd::Pause => wallet::cmd_ironwood_pause(&cfg).await,
             IronwoodCmd::Resume => wallet::cmd_ironwood_resume(&cfg).await,
         },
-        Commands::Pair { device_name, relay_url } => {
-            match zumbra_engine::hitl::generate_pairing_code(&cfg.data_dir) {
-                Ok((channel_id, pairing_code)) => {
-                    match zumbra_engine::hitl::complete_pairing(
-                        &cfg.data_dir,
-                        &channel_id,
-                        &device_name,
-                        relay_url.as_deref(),
-                    ) {
-                        Ok(_) => {
-                            print_ok(
-                                serde_json::json!({
-                                    "channel_id": channel_id,
-                                    "pairing_code": pairing_code,
-                                    "device_name": device_name,
-                                }),
-                                cfg.human,
-                                |d| {
-                                    eprintln!("Paired successfully!");
-                                    eprintln!();
-                                    eprintln!("  Scan this in Zumbra mobile app (Settings > Agent Pairing):");
-                                    eprintln!();
-                                    eprintln!("  {}", d.get("pairing_code").and_then(|v| v.as_str()).unwrap_or(""));
-                                    eprintln!();
-                                    eprintln!("  Channel: {}", d.get("channel_id").and_then(|v| v.as_str()).unwrap_or(""));
-                                },
-                            );
-                            Ok(())
                         }
                         Err(e) => Err(e),
                     }
