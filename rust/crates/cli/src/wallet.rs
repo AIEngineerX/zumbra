@@ -608,6 +608,39 @@ pub async fn cmd_send_propose(
     Ok(())
 }
 
+/// The gate every CLI confirm passes through: the policy judges the amount the engine will
+/// actually send (a `--max` proposal has none until now, and the pending file is writable by
+/// the agent's OS user), and a refusal is logged. Only after that is the seed read.
+pub fn seed_for_confirm(
+    data_dir: &str,
+    pending: &PendingProposal,
+    send_amount: u64,
+) -> Result<secrecy::SecretString> {
+    let policy = zumbra_engine::policy::load_policy(data_dir);
+    let daily_spent = zumbra_engine::audit::daily_spent(data_dir)?;
+    if let Err(violation) = zumbra_engine::policy::check_proposal(
+        &policy,
+        &pending.address,
+        send_amount,
+        &pending.context_id,
+        daily_spent,
+    ) {
+        zumbra_engine::audit::log_event(
+            data_dir,
+            "confirm_send",
+            Some(&pending.address),
+            Some(send_amount),
+            None,
+            pending.context_id.as_deref(),
+            None,
+            Some(&violation.to_string()),
+        )
+        .ok();
+        return Err(anyhow::anyhow!("{}", violation));
+    }
+    read_seed(data_dir)
+}
+
 pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
     ensure_sapling_params(&cfg.data_dir).await?;
     sync_if_needed(cfg).await?;
@@ -649,7 +682,13 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
         );
     }
 
-    let seed = read_seed(&cfg.data_dir)?;
+    let seed = match seed_for_confirm(&cfg.data_dir, &pending, send_amount) {
+        Ok(seed) => seed,
+        Err(e) => {
+            zumbra_engine::wallet::close().await;
+            return Err(e);
+        }
+    };
     let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
             zumbra_engine::policy::record_confirm();
@@ -869,6 +908,55 @@ pub async fn cmd_ironwood_pause(_cfg: &Config) -> Result<()> {
 
 pub async fn cmd_ironwood_resume(_cfg: &Config) -> Result<()> {
     Err(anyhow::anyhow!("Headless resume is not connected to the SDK migration runner. Use the wallet app managing this transfer. Nothing was resumed."))
+}
+
+#[cfg(test)]
+mod confirm_gate_tests {
+    use super::*;
+
+    fn scratch(tag: &str) -> std::path::PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("zumbra-{tag}-{}-{nanos}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// The amount the engine will actually send (not the one the agent typed, and not the one in
+    /// a pending file the agent can edit) is what the policy judges, and it is judged before the
+    /// seed is touched. A --max proposal has no amount until the engine produces one.
+    #[test]
+    fn confirm_checks_the_real_amount_against_policy_before_reading_the_seed() {
+        let dir = scratch("confirm-gate");
+        let data_dir = dir.to_str().unwrap();
+        let mut policy = default_policy();
+        policy.max_per_tx = 1_000;
+        zumbra_engine::policy::save_policy(data_dir, &policy).unwrap();
+        // If the seed were read first, this is the error we would see instead of the policy one.
+        std::env::set_var("OWS_WALLET", format!("zumbra-no-such-wallet-{}", std::process::id()));
+        let pending = PendingProposal {
+            address: "utest1placeholder".into(),
+            amount: 0,
+            memo: None,
+            is_max: true,
+            context_id: None,
+        };
+
+        let err = seed_for_confirm(data_dir, &pending, 5_000).unwrap_err().to_string();
+
+        assert!(err.contains("POLICY_EXCEEDED"), "expected the policy violation, got: {err}");
+        assert!(!err.contains("OWS"), "the seed was read before the policy ran: {err}");
+        let log = zumbra_engine::audit::query_log(data_dir, 10, None).unwrap();
+        assert!(
+            log.iter().any(|e| e.action == "confirm_send"
+                && e.amount == Some(5_000)
+                && e.error.as_deref().map_or(false, |m| m.contains("POLICY_EXCEEDED"))),
+            "the refusal was not written to the audit log: {log:?}"
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
 }
 
 #[cfg(test)]

@@ -32,9 +32,11 @@ Holds on the current code (verified by reading, not yet by running):
 - `wallet restore` reads the seed from stdin, stores it only in the vault, and writes the default
   policy; the CLI never reads a seed from a file in the data directory. Tested, with a mutation
   check (2026-09-21).
+- The CLI `send confirm` re-runs the policy on the amount the engine will actually send, before
+  the seed is read, so a `--max` proposal and an edited pending file are judged like any other
+  send; refusals are logged. Tested, with a mutation check (2026-09-21).
 
 Does **not** hold yet (scheduled, in severity order):
-- A max-amount send skips the policy check.
 - A missing policy file means no limits; a zero in the policy means unlimited, not zero.
 - Policy files, the audit database, and `policy set` are writable by the same OS user as the agent.
 - Above the approval threshold a send is blocked outright; the operator approval channel that

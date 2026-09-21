@@ -33,6 +33,9 @@ versions follow [Semantic Versioning](https://semver.org/). Nothing has been rel
   encrypted OWS vault instead of a plaintext `.seed` file, refuses to overwrite an existing vault
   wallet, and writes the default spending policy so a restored wallet is capped. The plaintext
   seed-file fallback in the CLI is gone. Four tests; two mutation checks recorded.
+- CLI `send confirm` checks the policy against the engine's real send amount before reading the
+  seed. Previously a `--max` proposal was never policy-checked and confirm only ran the rate
+  limit, so an edited pending file was signed as written. Test plus mutation check.
 - Inherited from upstream's 2026-09-10 remediation: MCP self-unlock and self-approve tools
   removed, durable daily-spend reservations, confirmations bound to unpredictable proposal IDs.
 - Known open items are listed in `SECURITY.md` and are the next work.
