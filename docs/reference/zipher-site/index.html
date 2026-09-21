@@ -1,0 +1,362 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><title>Zipher — Zcash for humans and agents</title><meta name="description" content="Privacy-first Zcash wallet. One input. Send, swap, bet, pay. Open source."><link rel="canonical" href="https://zipher.to/"><meta property="og:type" content="website"><meta property="og:url" content="https://zipher.to/"><meta property="og:title" content="Zipher — Zcash for humans and agents"><meta property="og:description" content="Privacy-first Zcash wallet. One input. Send, swap, bet, pay. Open source."><meta property="og:site_name" content="Zipher"><meta property="og:image" content="https://zipher.to/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Zipher — Zcash for humans and agents"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Zipher — Zcash for humans and agents"><meta name="twitter:description" content="Privacy-first Zcash wallet. One input. Send, swap, bet, pay. Open source."><meta name="twitter:image" content="https://zipher.to/og.png"><meta name="twitter:image:alt" content="Zipher — Zcash for humans and agents"><link rel="icon" type="image/png" href="/zipher-logo.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><script>
+    (function () {
+      var p = new URLSearchParams(location.search);
+      var m = p.get('mode') || localStorage.getItem('zipher-mode');
+      if (m === 'agent') document.documentElement.dataset.mode = 'agent';
+    })();
+  </script><link rel="stylesheet" href="/_astro/global.B-IAzkmL.css"></head> <body> <div class="orb-container" aria-hidden="true"> <div class="orb orb-1"></div> <div class="orb orb-2"></div> <div class="orb orb-3"></div> <div class="beam human-only" aria-hidden="true"></div> </div> <canvas id="particles" class="particles" aria-hidden="true"></canvas>  <div class="mode-toggle" role="group" aria-label="Interface mode"> <button type="button" class="mode-btn is-active" data-mode="human" aria-pressed="true">Human</button> <button type="button" class="mode-btn" data-mode="agent" aria-pressed="false">Agent</button> </div> <div class="site"> <main class="hero"> <div class="scanlines agent-only" aria-hidden="true"></div> <header class="logo-wrap"> <div class="logo-human human-only"> <img src="/zipher-logo.png" alt="" width="72" height="72"> <div class="wordmark" aria-label="Zipher"> <span class="wordmark-z">Z</span><span class="wordmark-rest">IPHER</span> </div> <p class="hero-tagline human-only">Zcash for humans and agents</p> </div> <pre class="logo-agent agent-only" aria-label="zipher-cli">┌─────────────────────────────┐
+│  <span class="term-z">Z</span>IPHER-CLI  <span class="term-dim">v0.2.0-alpha</span>      │
+│  <span class="term-dim">agent wallet · mcp · ows</span>   │
+└─────────────────────────────┘</pre> </header> <section class="prompt-section" aria-label="Ask about Zipher"> <p class="section-hint human-only">Ask anything</p> <p class="section-hint agent-only">stdin</p> <div class="prompt-shell"> <div class="prompt-input-wrap"> <svg class="prompt-icon human-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <circle cx="11" cy="11" r="7"></circle> <path d="M20 20l-3-3"></path> </svg> <span class="prompt-prefix agent-only" aria-hidden="true">$</span> <input id="prompt-input" class="prompt-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Ask Zipher anything" maxlength="200"> <div id="prompt-placeholder" class="prompt-placeholder" aria-hidden="true"></div> <button id="prompt-submit" class="prompt-submit" type="button" aria-label="Submit"> <span class="human-only submit-icon" aria-hidden="true"> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"> <path d="M5 12h14M13 6l6 6-6 6"></path> </svg> </span> <span class="agent-only submit-label" aria-hidden="true">↵</span> </button> </div> </div> <div id="chips" class="chips" role="list"></div> <div id="answer-panel" class="answer-panel empty" aria-live="polite" aria-atomic="true"> <div class="answer-card"> <div id="answer-label" class="answer-label"></div> <div id="answer-body" class="answer-body"></div> <div id="answer-ctas" class="answer-ctas" hidden></div> <div id="answer-exit" class="answer-exit agent-only" hidden>exit 0</div> </div> </div> </section> </main> <footer class="footer"> <ul class="footer-links"> <li><a href="https://testflight.apple.com/join/d59vuZ5y" target="_blank" rel="noopener noreferrer">TestFlight</a></li><li><a href="https://play.google.com/apps/testing/dev.atmospherelabs.zipher" target="_blank" rel="noopener noreferrer">Google Play</a></li><li><a href="https://github.com/atmospherelabs-dev/zipher-app" target="_blank" rel="noopener noreferrer">GitHub</a></li><li><a href="https://www.npmjs.com/package/@cipherpay/zipher-cli" target="_blank" rel="noopener noreferrer">zipher-cli</a></li><li><a href="https://github.com/atmospherelabs-dev/zipher-app/blob/main/mcp-config.example.json" target="_blank" rel="noopener noreferrer">MCP</a></li><li><a href="https://atmospherelabs.dev" target="_blank" rel="noopener noreferrer">Atmosphere</a></li> </ul> <p id="footer-tagline" class="footer-tagline">Making Zcash accessible. For everyone.</p> </footer> </div> <script>(function(){const knowledgeJson = "[{\"id\":\"what\",\"question\":\"What is Zipher?\",\"keywords\":[\"what is zipher\",\"what is it\",\"whats zipher\",\"what's zipher\",\"tell me about zipher\",\"who are you\",\"what do you do\",\"explain zipher\"],\"answer\":\"A privacy-first wallet built around one idea: you should never need more than a single input.\\n\\nZipher is a Zcash wallet where you type what you want — send, swap, bet, pay — and the app handles the rest. An on-device AI parses your intent. You confirm before anything irreversible.\\n\\nFor agents and developers, the same Rust engine powers zipher-cli and an MCP server with 29 tools.\\n\\nOpen source. No accounts. No telemetry. Keys never leave your device.\",\"cta\":[{\"label\":\"TestFlight (iOS)\",\"href\":\"https://testflight.apple.com/join/d59vuZ5y\"},{\"label\":\"Google Play (Android)\",\"href\":\"https://play.google.com/apps/testing/dev.atmospherelabs.zipher\"}]},{\"id\":\"privacy\",\"question\":\"How is my money private?\",\"keywords\":[\"private\",\"privacy\",\"shielded\",\"anonymous\",\"hidden\",\"zcash\",\"zk\",\"zero knowledge\",\"track\",\"surveillance\"],\"answer\":\"Every transaction is shielded by default — amount, sender, and recipient are hidden on-chain using zero-knowledge proofs. Not a mixer. Not optional. Mathematically enforced.\\n\\nZipher has no backend. It connects to public lightwalletd servers for chain data only. Your keys live in the iOS Keychain, derived briefly in RAM, wiped on lock.\\n\\nWhen a payment arrives, Zipher detects it locally by decrypting raw mempool transactions — your viewing keys never leave the device.\"},{\"id\":\"safe\",\"question\":\"Is it safe?\",\"keywords\":[\"safe\",\"secure\",\"security\",\"trust\",\"audit\",\"keys\",\"seed\",\"backup\",\"lose\"],\"answer\":\"Your seed lives in platform secure storage — iOS Keychain, Android Keystore. It enters RAM only to sign, then gets wiped. Every destructive action requires explicit confirmation.\\n\\nThe entire codebase is public. Zipher has not been formally audited yet — use the beta with caution and don't store more than you're willing to lose.\\n\\nBack up your recovery phrase. If you lose it, no one — including us — can recover your funds.\",\"cta\":[{\"label\":\"View source\",\"href\":\"https://github.com/atmospherelabs-dev/zipher-app\"}]},{\"id\":\"download\",\"question\":\"Where do I download it?\",\"keywords\":[\"download\",\"install\",\"get\",\"app store\",\"testflight\",\"ios\",\"android\",\"google play\",\"mobile\",\"beta\"],\"answer\":\"iOS: open beta on TestFlight. Android: open testing on Google Play.\\n\\nInstall, create a wallet, and you're ready.\\n\\nAgents & developers: npm install -g @cipherpay/zipher-cli — same Rust engine as the mobile app, headless.\",\"cta\":[{\"label\":\"TestFlight (iOS)\",\"href\":\"https://testflight.apple.com/join/d59vuZ5y\"},{\"label\":\"Google Play (Android)\",\"href\":\"https://play.google.com/apps/testing/dev.atmospherelabs.zipher\"}]},{\"id\":\"opensource\",\"question\":\"Is it open source?\",\"keywords\":[\"open source\",\"opensource\",\"github\",\"code\",\"public\",\"license\",\"mit\"],\"answer\":\"Yes — MIT licensed on GitHub: atmospherelabs-dev/zipher-app.\\n\\nFlutter UI, Rust engine (sync, send, Polymarket, EVM swaps, voting proofs), zipher-cli, and zipher-mcp-server. We do not ask for trust. We show our work.\",\"cta\":[{\"label\":\"View source\",\"href\":\"https://github.com/atmospherelabs-dev/zipher-app\"}]},{\"id\":\"agent-wallet\",\"question\":\"What is the agent wallet?\",\"keywords\":[\"agent wallet\",\"agentic\",\"headless\",\"autonomous wallet\",\"ai wallet\",\"for agents\",\"vps\",\"daemon\"],\"answer\":\"Zipher without a UI — a local-first Zcash light client for AI agents and automation.\\n\\nRuns on a laptop, $5 VPS, or Raspberry Pi. Syncs in minutes via lightwalletd — no full node, no cloud custody. OWS encrypted vault (AES-256-GCM + scrypt) stores the mnemonic; process hardening disables core dumps at startup.\\n\\nzipher-cli: two-step send (propose → confirm), NEAR Intents swaps, Polymarket, x402/MPP paywalls, daemon mode with kill switch. zipher-mcp-server: 29 tools over stdio for Claude, Cursor, and any MCP client.\\n\\nSpending policy (per-tx caps, daily limits, allowlist, approval thresholds) and audit log on every action.\",\"cta\":[{\"label\":\"CLI readme\",\"href\":\"https://github.com/atmospherelabs-dev/zipher-app#zipher-cli\"}]},{\"id\":\"cli\",\"question\":\"What is zipher-cli?\",\"keywords\":[\"zipher-cli\",\"zipher cli\",\"cli\",\"command line\",\"terminal\",\"npm\",\"install cli\",\"how do i install\",\"headless wallet\"],\"answer\":\"Headless Zcash light wallet — same Rust engine as the mobile app.\\n\\nzipher wallet init              # OWS encrypted vault\\nzipher --human balance          # shielded balance\\nzipher --human polymarket list  # prediction markets\\nzipher serve                    # x402 pay-per-call HTTP API\\n\\nInstall: npm install -g @cipherpay/zipher-cli\\nIncludes zipher-mcp-server. Keys stay on your machine.\",\"cta\":[{\"label\":\"npm package\",\"href\":\"https://www.npmjs.com/package/@cipherpay/zipher-cli\"}]},{\"id\":\"agents\",\"question\":\"Can an AI agent use this?\",\"keywords\":[\"ai\",\"agent\",\"agents\",\"llm\",\"mcp\",\"claude\",\"cursor\",\"autonomous\",\"bot\",\"mcp server\"],\"answer\":\"Yes. zipher-mcp-server exposes 29 tools over stdio — wallet status, propose/confirm send, shield, swaps, x402 payments, Polymarket, market research.\\n\\nThe server holds the seed in memory after unlock; tools never accept seed as an argument. Policy engine enforces limits before any signature. Transactions above approval_threshold return APPROVAL_REQUIRED — human-in-the-loop by design.\\n\\nMobile uses on-device SmolLM2 for intent parsing. Headless agents wire MCP into Claude, Cursor, or custom orchestrators.\",\"cta\":[{\"label\":\"MCP config\",\"href\":\"https://github.com/atmospherelabs-dev/zipher-app/blob/main/mcp-config.example.json\"}]},{\"id\":\"different\",\"question\":\"How is this different from other wallets?\",\"keywords\":[\"different\",\"compare\",\"vs\",\"versus\",\"better\",\"why zipher\",\"unique\"],\"answer\":\"Most wallets are dashboards — tabs, forms, settings menus. Zipher bets on one input.\\n\\nType what you want. The wallet figures out the chain, the address format, the fee, the confirmation. You approve.\\n\\nPrivacy is not a feature toggle — Zcash shielded by default. And the same Rust engine that powers your phone also runs headless for AI agents, with spending policy, audit logs, and approval gates built in.\"},{\"id\":\"action\",\"question\":\"What can Action do?\",\"keywords\":[\"action\",\"send\",\"swap\",\"bet\",\"pay\",\"polymarket\",\"bridge\",\"sweep\",\"vote\",\"features\"],\"answer\":\"Action is Zipher's conversational interface — and the direction every wallet should go. Instead of navigating screens, you describe what you want.\\n\\n\\\"send 5 zec to alice\\\" · \\\"swap 0.1 eth to zec\\\" · \\\"bet $20 on trump wins\\\" · \\\"pay this invoice\\\"\\n\\nThe app parses intent using an on-device AI model. You see a confirmation with all details before anything signs. No surprises.\\n\\nAction is live in the beta alongside the classic wallet view. Over time, it becomes the whole UI.\"},{\"id\":\"company\",\"question\":\"Who built this?\",\"keywords\":[\"atmosphere\",\"company\",\"team\",\"labs\",\"who built\",\"who made\"],\"answer\":\"Atmosphere Labs — open-source infrastructure making Zcash accessible for users and developers.\\n\\nSame team behind CipherScan (privacy explorer) and CipherPay (shielded payment processing). Wyoming, USA.\",\"cta\":[{\"label\":\"atmospherelabs.dev\",\"href\":\"https://atmospherelabs.dev\"}]}]";
+const placeholdersJson = "[\"What is Zipher?\",\"How is my money private?\",\"What can Action do?\",\"Where do I download?\",\"What is the agent wallet?\",\"How do I install zipher-cli?\"]";
+const chipsJson = "[\"What is Zipher?\",\"Download\",\"Agent wallet\",\"Privacy\",\"Open source\"]";
+const agentPlaceholdersJson = "[\"zipher --human balance\",\"zipher wallet init\",\"zipher mcp --help\",\"zipher --human polymarket list\",\"zipher serve --port 8787\"]";
+const agentChipsJson = "[\"zipher --help\",\"wallet init\",\"mcp server\",\"agent wallet\",\"npm install\"]";
+const cliCommandsJson = "{\"what\":\"zipher --human about\",\"privacy\":\"zipher --human explain privacy\",\"safe\":\"zipher --human security\",\"download\":\"zipher --human install\",\"opensource\":\"zipher --human license\",\"agent-wallet\":\"zipher --human agent-wallet\",\"cli\":\"zipher --help\",\"agents\":\"zipher mcp --help\",\"different\":\"zipher --human compare\",\"action\":\"zipher --human action\",\"company\":\"zipher --human about --vendor\"}";
+const fallbackAnswer = "Not sure on that one. Try: What is Zipher, Download, Agent wallet, or How is my money private?";
+const agentFallbackAnswer = "error: unknown command\nhint: zipher --help · zipher --human about · zipher mcp --help";
+
+    /** @typedef {{ id: string, question: string, keywords: string[], answer: string, cta?: { label: string, href: string } }} Entry */
+
+    const KNOWLEDGE = /** @type {Entry[]} */ (JSON.parse(knowledgeJson));
+    const HUMAN_PLACEHOLDERS = /** @type {string[]} */ (JSON.parse(placeholdersJson));
+    const HUMAN_CHIPS = /** @type {string[]} */ (JSON.parse(chipsJson));
+    const AGENT_PLACEHOLDERS = /** @type {string[]} */ (JSON.parse(agentPlaceholdersJson));
+    const AGENT_CHIPS = /** @type {string[]} */ (JSON.parse(agentChipsJson));
+    const CLI_COMMANDS = /** @type {Record<string, string>} */ (JSON.parse(cliCommandsJson));
+    const HUMAN_FALLBACK = fallbackAnswer;
+    const AGENT_FALLBACK = agentFallbackAnswer;
+
+    const TAGLINES = {
+      human: 'Making Zcash accessible. For everyone.',
+      agent: 'local-first · keys never leave the machine · exit 0',
+    };
+
+    /** @type {'human' | 'agent'} */
+    let mode = 'human';
+
+    const STOP_WORDS = new Set([
+      'a', 'an', 'the', 'is', 'it', 'to', 'do', 'i', 'my', 'me', 'you', 'your',
+      'how', 'what', 'where', 'can', 'does', 'are', 'was', 'be', 'of', 'in', 'on',
+      'for', 'and', 'or', 'this', 'that', 'with', 'about', 'tell', 'please',
+    ]);
+
+    /** @type {HTMLInputElement} */
+    const input = document.getElementById('prompt-input');
+    /** @type {HTMLButtonElement} */
+    const submit = document.getElementById('prompt-submit');
+    /** @type {HTMLElement} */
+    const placeholderEl = document.getElementById('prompt-placeholder');
+    /** @type {HTMLElement} */
+    const chipsEl = document.getElementById('chips');
+    /** @type {HTMLElement} */
+    const panel = document.getElementById('answer-panel');
+    /** @type {HTMLElement} */
+    const labelEl = document.getElementById('answer-label');
+    /** @type {HTMLElement} */
+    const bodyEl = document.getElementById('answer-body');
+    /** @type {HTMLElement} */
+    const ctasEl = document.getElementById('answer-ctas');
+    /** @type {HTMLElement} */
+    const exitEl = document.getElementById('answer-exit');
+    /** @type {HTMLElement} */
+    const taglineEl = document.getElementById('footer-tagline');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+
+    let placeholderIndex = 0;
+    let placeholderTimer = /** @type {ReturnType<typeof setInterval> | null} */ (null);
+    let typingAbort = /** @type {AbortController | null} */ (null);
+    let focused = false;
+    let lastQuery = '';
+
+    function isAgent() { return mode === 'agent'; }
+
+    function activePlaceholders() {
+      return isAgent() ? AGENT_PLACEHOLDERS : HUMAN_PLACEHOLDERS;
+    }
+
+    function activeChips() {
+      return isAgent() ? AGENT_CHIPS : HUMAN_CHIPS;
+    }
+
+    function activeFallback() {
+      return isAgent() ? AGENT_FALLBACK : HUMAN_FALLBACK;
+    }
+
+    /** @param {'human' | 'agent'} next */
+    function setMode(next) {
+      document.documentElement.classList.add('mode-transition');
+      mode = next;
+      document.documentElement.dataset.mode = next;
+      localStorage.setItem('zipher-mode', next);
+
+      modeBtns.forEach((btn) => {
+        const el = /** @type {HTMLButtonElement} */ (btn);
+        const on = el.dataset.mode === next;
+        el.classList.toggle('is-active', on);
+        el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+
+      input.setAttribute(
+        'aria-label',
+        next === 'agent' ? 'Enter a zipher-cli command' : 'Ask Zipher anything',
+      );
+      taglineEl.textContent = TAGLINES[next];
+
+      placeholderIndex = 0;
+      stopPlaceholderRotation();
+      startPlaceholderRotation();
+      rebuildChips();
+      updatePlaceholderVisibility();
+
+      setTimeout(() => document.documentElement.classList.remove('mode-transition'), 420);
+
+      if (typeof window.__switchCanvasMode === 'function') {
+        window.__switchCanvasMode(next);
+      }
+
+      if (!panel.classList.contains('empty') && lastQuery) {
+        ask(lastQuery);
+      }
+    }
+
+    function initMode() {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get('mode');
+      const stored = localStorage.getItem('zipher-mode');
+      const initial = fromUrl === 'agent' || stored === 'agent' ? 'agent' : 'human';
+      setMode(initial);
+    }
+
+    function normalize(text) {
+      return text.toLowerCase().replace(/[^\w\s?-]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function tokenize(text) {
+      return normalize(text).split(' ').filter((t) => t.length > 1 && !STOP_WORDS.has(t));
+    }
+
+    /** @param {string} query @param {Entry} entry */
+    function scoreMatch(query, entry) {
+      const q = normalize(query);
+      if (!q) return 0;
+      let score = 0;
+      for (const keyword of entry.keywords) {
+        const k = normalize(keyword);
+        if (q === k) score = Math.max(score, 1);
+        else if (q.includes(k) || k.includes(q)) score = Math.max(score, 0.85);
+      }
+      if (normalize(entry.question) === q) score = Math.max(score, 0.95);
+      const qTokens = tokenize(q);
+      const entryTokens = new Set([
+        ...tokenize(entry.question),
+        ...entry.keywords.flatMap(tokenize),
+      ]);
+      if (qTokens.length > 0) {
+        let hits = 0;
+        for (const t of qTokens) {
+          if (entryTokens.has(t)) hits++;
+          else {
+            for (const et of entryTokens) {
+              if (et.startsWith(t) || t.startsWith(et)) { hits += 0.5; break; }
+            }
+          }
+        }
+        score = Math.max(score, hits / qTokens.length);
+      }
+      return score;
+    }
+
+    /** @param {string} query */
+    function findBestMatch(query) {
+      const trimmed = query.trim();
+      if (!trimmed) return null;
+      let best = null;
+      let bestScore = 0;
+      for (const entry of KNOWLEDGE) {
+        const s = scoreMatch(trimmed, entry);
+        if (s > bestScore) { bestScore = s; best = entry; }
+      }
+      return bestScore >= 0.35 ? best : null;
+    }
+
+    function updatePlaceholderVisibility() {
+      const show = !focused && input.value.length === 0;
+      placeholderEl.classList.toggle('hidden', !show);
+    }
+
+    function setPlaceholderText(text) {
+      placeholderEl.innerHTML = `<span>${escapeHtml(text)}</span>`;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function stopPlaceholderRotation() {
+      if (placeholderTimer) {
+        clearInterval(placeholderTimer);
+        placeholderTimer = null;
+      }
+    }
+
+    function startPlaceholderRotation() {
+      stopPlaceholderRotation();
+      const list = activePlaceholders();
+      setPlaceholderText(list[placeholderIndex]);
+      placeholderTimer = setInterval(() => {
+        if (focused || input.value.length > 0) return;
+        placeholderEl.classList.add('fade-out');
+        setTimeout(() => {
+          placeholderIndex = (placeholderIndex + 1) % list.length;
+          setPlaceholderText(list[placeholderIndex]);
+          placeholderEl.classList.remove('fade-out');
+        }, 300);
+      }, 3200);
+    }
+
+    function paragraphsToHtml(text, agentStyle) {
+      if (agentStyle) {
+        return text.split('\n\n').map((p) => `<p><span class="term-out">${escapeHtml(p)}</span></p>`).join('');
+      }
+      return text.split('\n\n').map((p) => `<p>${escapeHtml(p)}</p>`).join('');
+    }
+
+    function sleep(ms, signal) {
+      return new Promise((resolve, reject) => {
+        if (signal.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+        const id = setTimeout(resolve, ms);
+        signal.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
+      });
+    }
+
+    /** @param {Entry | null} entry @param {string} query */
+    async function showAnswer(entry, query) {
+      if (typingAbort) typingAbort.abort();
+      typingAbort = new AbortController();
+      const signal = typingAbort.signal;
+
+      const agent = isAgent();
+      const fallbackText = activeFallback();
+      const fullText = entry ? entry.answer : fallbackText;
+
+      ctasEl.hidden = true;
+      ctasEl.innerHTML = '';
+      exitEl.hidden = true;
+      bodyEl.innerHTML = '';
+
+      if (agent) {
+        const cmd = entry ? (CLI_COMMANDS[entry.id] || `zipher --human ${entry.id}`) : query.trim();
+        labelEl.textContent = `$ ${cmd}`;
+      } else {
+        labelEl.textContent = entry ? entry.question : 'Zipher';
+      }
+
+      panel.classList.remove('empty', 'answer-enter');
+      panel.classList.add('visible');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => panel.classList.add('answer-enter'));
+      });
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const typeSpeed = agent ? 8 : 10;
+
+      if (reducedMotion) {
+        bodyEl.innerHTML = paragraphsToHtml(fullText, agent);
+      } else {
+        const cursor = document.createElement('span');
+        cursor.className = 'typing-cursor';
+        const paragraphs = fullText.split('\n\n');
+        let built = '';
+
+        try {
+          for (let p = 0; p < paragraphs.length; p++) {
+            const para = paragraphs[p];
+            for (let c = 0; c < para.length; c++) {
+              built = paragraphs.slice(0, p).join('\n\n') + (p > 0 ? '\n\n' : '') + para.slice(0, c + 1);
+              bodyEl.innerHTML = paragraphsToHtml(built, agent);
+              bodyEl.appendChild(cursor);
+              const ch = para[c];
+              const delay = ch === ' ' ? 14 : typeSpeed + Math.random() * (agent ? 8 : 12);
+              await sleep(delay, signal);
+            }
+            if (p < paragraphs.length - 1) await sleep(agent ? 80 : 120, signal);
+          }
+          cursor.remove();
+          bodyEl.innerHTML = paragraphsToHtml(fullText, agent);
+        } catch {
+          bodyEl.innerHTML = paragraphsToHtml(fullText, agent);
+        }
+      }
+
+      if (entry?.cta && entry.cta.length > 0 && !signal.aborted) {
+        ctasEl.innerHTML = entry.cta.map((c) => {
+          const prefix = isAgent() ? `<span class="agent-only cta-prefix">→ </span>` : '';
+          const arrow = isAgent() ? '' : `<svg class="human-only" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+          const label = isAgent() ? `open ${c.label.toLowerCase()}` : c.label;
+          return `<a class="answer-cta" href="${c.href}" target="_blank" rel="noopener noreferrer">${prefix}<span>${escapeHtml(label)}</span>${arrow}</a>`;
+        }).join('');
+        ctasEl.hidden = false;
+      }
+
+      if (agent && !signal.aborted) {
+        exitEl.hidden = !entry;
+        exitEl.textContent = entry ? 'exit 0' : 'exit 1';
+        exitEl.classList.toggle('term-err', !entry);
+      }
+    }
+
+    function ask(query) {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+      lastQuery = trimmed;
+      const match = findBestMatch(trimmed);
+      showAnswer(match, trimmed);
+    }
+
+    function rebuildChips() {
+      chipsEl.innerHTML = '';
+      activeChips().forEach((chip, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chip';
+        btn.textContent = chip;
+        btn.style.animationDelay = `${0.35 + i * 0.06}s`;
+        btn.setAttribute('role', 'listitem');
+        btn.addEventListener('click', () => {
+          input.value = chip;
+          updatePlaceholderVisibility();
+          ask(chip);
+          input.focus();
+        });
+        chipsEl.appendChild(btn);
+      });
+    }
+
+    modeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const next = /** @type {'human' | 'agent'} */ (/** @type {HTMLElement} */ (btn).dataset.mode);
+        if (next && next !== mode) setMode(next);
+      });
+    });
+
+    input.addEventListener('focus', () => {
+      focused = true;
+      updatePlaceholderVisibility();
+    });
+    input.addEventListener('blur', () => {
+      focused = false;
+      updatePlaceholderVisibility();
+    });
+    input.addEventListener('input', updatePlaceholderVisibility);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        ask(input.value);
+      }
+    });
+
+    submit.addEventListener('click', () => ask(input.value));
+
+    initMode();
+  })();</script>  <script type="module">let m=!1;document.addEventListener("mousemove",i=>{m||(m=!0,requestAnimationFrame(()=>{const t=(i.clientX/window.innerWidth-.5)*2,o=(i.clientY/window.innerHeight-.5)*2;document.querySelectorAll(".orb").forEach((r,h)=>{const d=r,c=10+h*5;d.style.translate=`${t*c}px ${o*c}px`}),m=!1}))});const e=document.getElementById("particles"),n=e.getContext("2d"),A=window.matchMedia("(prefers-reduced-motion: reduce)").matches;let l=0,M=.5,y=.5,f=null;function u(){e.width=window.innerWidth,e.height=window.innerHeight}let a=[];function S(){u();const t=window.innerWidth<600?Math.min(Math.floor(e.width*e.height/4e4),25):Math.min(Math.floor(e.width*e.height/22e3),60);a=Array.from({length:t},()=>({x:Math.random()*e.width,y:Math.random()*e.height,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.15-.08,r:Math.random()*1.4+.6,a:Math.random()*.35+.08}))}function x(){n.clearRect(0,0,e.width,e.height);const i=window.innerWidth<600?80:120;for(const t of a){const o=t.x/e.width-M,r=t.y/e.height-y,h=Math.sqrt(o*o+r*r),d=h<.15?(.15-h)*.8:0;t.vx+=o*d*.3,t.vy+=r*d*.3,t.x+=t.vx,t.y+=t.vy,t.x<-10&&(t.x=e.width+10),t.x>e.width+10&&(t.x=-10),t.y<-10&&(t.y=e.height+10),t.y>e.height+10&&(t.y=-10),n.beginPath(),n.arc(t.x,t.y,t.r,0,Math.PI*2),n.fillStyle=`rgba(0, 212, 255, ${t.a})`,n.fill()}for(let t=0;t<a.length;t++)for(let o=t+1;o<a.length;o++){const r=a[t].x-a[o].x,h=a[t].y-a[o].y,d=Math.sqrt(r*r+h*h);d<i&&(n.beginPath(),n.moveTo(a[t].x,a[t].y),n.lineTo(a[o].x,a[o].y),n.strokeStyle=`rgba(0, 212, 255, ${.06*(1-d/i)})`,n.lineWidth=.5,n.stroke())}l=requestAnimationFrame(x)}const g="01アウカシセタツネヒホムヨルワン.·:";let w=[],s=14;function v(){u(),s=window.innerWidth<600?12:16;const i=Math.floor(e.width/s);w=Array.from({length:i},()=>({y:Math.random()*-80,speed:.15+Math.random()*.2,active:Math.random()<.35}))}function p(){n.fillStyle="rgba(3, 8, 6, 0.06)",n.fillRect(0,0,e.width,e.height),n.font=`${s}px 'JetBrains Mono', monospace`;for(let i=0;i<w.length;i++){const t=w[i];if(!t.active){Math.random()<8e-4&&(t.active=!0);continue}const o=g[Math.floor(Math.random()*g.length)],r=i*s,h=t.y*s,d=Math.random();if(d>.96)n.fillStyle="rgba(150, 255, 180, 0.5)",n.shadowColor="rgba(51, 255, 102, 0.4)",n.shadowBlur=6;else{const c=.03+d*.09;n.fillStyle=`rgba(51, 255, 102, ${c})`,n.shadowBlur=0}n.fillText(o,r,h),n.shadowBlur=0,t.y+=t.speed,h>e.height&&(t.y=Math.random()*-40,t.speed=.15+Math.random()*.2,t.active=Math.random()<.35)}l=requestAnimationFrame(p)}function C(){l&&(cancelAnimationFrame(l),l=0)}function b(i){A||(C(),f=i,i==="human"?(S(),x()):(n.clearRect(0,0,e.width,e.height),n.fillStyle="#030806",n.fillRect(0,0,e.width,e.height),v(),p()))}document.addEventListener("mousemove",i=>{M=i.clientX/window.innerWidth,y=i.clientY/window.innerHeight});window.addEventListener("resize",()=>{f==="human"?u():f==="agent"&&v()});window.__switchCanvasMode=b;const W=document.documentElement.dataset.mode==="agent"?"agent":"human";b(W);</script> </body> </html>

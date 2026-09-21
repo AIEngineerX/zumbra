@@ -1,0 +1,229 @@
+[
+  {
+    "id": "what",
+    "question": "What is Zipher?",
+    "keywords": [
+      "what is zipher",
+      "what is it",
+      "whats zipher",
+      "what's zipher",
+      "tell me about zipher",
+      "who are you",
+      "what do you do",
+      "explain zipher"
+    ],
+    "answer": "A privacy-first wallet built around one idea: you should never need more than a single input.\n\nZipher is a Zcash wallet where you type what you want — send, swap, bet, pay — and the app handles the rest. An on-device AI parses your intent. You confirm before anything irreversible.\n\nFor agents and developers, the same Rust engine powers zipher-cli and an MCP server with 29 tools.\n\nOpen source. No accounts. No telemetry. Keys never leave your device.",
+    "cta": [
+      {
+        "label": "TestFlight (iOS)",
+        "href": "https://testflight.apple.com/join/d59vuZ5y"
+      },
+      {
+        "label": "Google Play (Android)",
+        "href": "https://play.google.com/apps/testing/dev.atmospherelabs.zipher"
+      }
+    ]
+  },
+  {
+    "id": "privacy",
+    "question": "How is my money private?",
+    "keywords": [
+      "private",
+      "privacy",
+      "shielded",
+      "anonymous",
+      "hidden",
+      "zcash",
+      "zk",
+      "zero knowledge",
+      "track",
+      "surveillance"
+    ],
+    "answer": "Every transaction is shielded by default — amount, sender, and recipient are hidden on-chain using zero-knowledge proofs. Not a mixer. Not optional. Mathematically enforced.\n\nZipher has no backend. It connects to public lightwalletd servers for chain data only. Your keys live in the iOS Keychain, derived briefly in RAM, wiped on lock.\n\nWhen a payment arrives, Zipher detects it locally by decrypting raw mempool transactions — your viewing keys never leave the device."
+  },
+  {
+    "id": "safe",
+    "question": "Is it safe?",
+    "keywords": [
+      "safe",
+      "secure",
+      "security",
+      "trust",
+      "audit",
+      "keys",
+      "seed",
+      "backup",
+      "lose"
+    ],
+    "answer": "Your seed lives in platform secure storage — iOS Keychain, Android Keystore. It enters RAM only to sign, then gets wiped. Every destructive action requires explicit confirmation.\n\nThe entire codebase is public. Zipher has not been formally audited yet — use the beta with caution and don't store more than you're willing to lose.\n\nBack up your recovery phrase. If you lose it, no one — including us — can recover your funds.",
+    "cta": [
+      {
+        "label": "View source",
+        "href": "https://github.com/atmospherelabs-dev/zipher-app"
+      }
+    ]
+  },
+  {
+    "id": "download",
+    "question": "Where do I download it?",
+    "keywords": [
+      "download",
+      "install",
+      "get",
+      "app store",
+      "testflight",
+      "ios",
+      "android",
+      "google play",
+      "mobile",
+      "beta"
+    ],
+    "answer": "iOS: open beta on TestFlight. Android: open testing on Google Play.\n\nInstall, create a wallet, and you're ready.\n\nAgents & developers: npm install -g @cipherpay/zipher-cli — same Rust engine as the mobile app, headless.",
+    "cta": [
+      {
+        "label": "TestFlight (iOS)",
+        "href": "https://testflight.apple.com/join/d59vuZ5y"
+      },
+      {
+        "label": "Google Play (Android)",
+        "href": "https://play.google.com/apps/testing/dev.atmospherelabs.zipher"
+      }
+    ]
+  },
+  {
+    "id": "opensource",
+    "question": "Is it open source?",
+    "keywords": [
+      "open source",
+      "opensource",
+      "github",
+      "code",
+      "public",
+      "license",
+      "mit"
+    ],
+    "answer": "Yes — MIT licensed on GitHub: atmospherelabs-dev/zipher-app.\n\nFlutter UI, Rust engine (sync, send, Polymarket, EVM swaps, voting proofs), zipher-cli, and zipher-mcp-server. We do not ask for trust. We show our work.",
+    "cta": [
+      {
+        "label": "View source",
+        "href": "https://github.com/atmospherelabs-dev/zipher-app"
+      }
+    ]
+  },
+  {
+    "id": "agent-wallet",
+    "question": "What is the agent wallet?",
+    "keywords": [
+      "agent wallet",
+      "agentic",
+      "headless",
+      "autonomous wallet",
+      "ai wallet",
+      "for agents",
+      "vps",
+      "daemon"
+    ],
+    "answer": "Zipher without a UI — a local-first Zcash light client for AI agents and automation.\n\nRuns on a laptop, $5 VPS, or Raspberry Pi. Syncs in minutes via lightwalletd — no full node, no cloud custody. OWS encrypted vault (AES-256-GCM + scrypt) stores the mnemonic; process hardening disables core dumps at startup.\n\nzipher-cli: two-step send (propose → confirm), NEAR Intents swaps, Polymarket, x402/MPP paywalls, daemon mode with kill switch. zipher-mcp-server: 29 tools over stdio for Claude, Cursor, and any MCP client.\n\nSpending policy (per-tx caps, daily limits, allowlist, approval thresholds) and audit log on every action.",
+    "cta": [
+      {
+        "label": "CLI readme",
+        "href": "https://github.com/atmospherelabs-dev/zipher-app#zipher-cli"
+      }
+    ]
+  },
+  {
+    "id": "cli",
+    "question": "What is zipher-cli?",
+    "keywords": [
+      "zipher-cli",
+      "zipher cli",
+      "cli",
+      "command line",
+      "terminal",
+      "npm",
+      "install cli",
+      "how do i install",
+      "headless wallet"
+    ],
+    "answer": "Headless Zcash light wallet — same Rust engine as the mobile app.\n\nzipher wallet init              # OWS encrypted vault\nzipher --human balance          # shielded balance\nzipher --human polymarket list  # prediction markets\nzipher serve                    # x402 pay-per-call HTTP API\n\nInstall: npm install -g @cipherpay/zipher-cli\nIncludes zipher-mcp-server. Keys stay on your machine.",
+    "cta": [
+      {
+        "label": "npm package",
+        "href": "https://www.npmjs.com/package/@cipherpay/zipher-cli"
+      }
+    ]
+  },
+  {
+    "id": "agents",
+    "question": "Can an AI agent use this?",
+    "keywords": [
+      "ai",
+      "agent",
+      "agents",
+      "llm",
+      "mcp",
+      "claude",
+      "cursor",
+      "autonomous",
+      "bot",
+      "mcp server"
+    ],
+    "answer": "Yes. zipher-mcp-server exposes 29 tools over stdio — wallet status, propose/confirm send, shield, swaps, x402 payments, Polymarket, market research.\n\nThe server holds the seed in memory after unlock; tools never accept seed as an argument. Policy engine enforces limits before any signature. Transactions above approval_threshold return APPROVAL_REQUIRED — human-in-the-loop by design.\n\nMobile uses on-device SmolLM2 for intent parsing. Headless agents wire MCP into Claude, Cursor, or custom orchestrators.",
+    "cta": [
+      {
+        "label": "MCP config",
+        "href": "https://github.com/atmospherelabs-dev/zipher-app/blob/main/mcp-config.example.json"
+      }
+    ]
+  },
+  {
+    "id": "different",
+    "question": "How is this different from other wallets?",
+    "keywords": [
+      "different",
+      "compare",
+      "vs",
+      "versus",
+      "better",
+      "why zipher",
+      "unique"
+    ],
+    "answer": "Most wallets are dashboards — tabs, forms, settings menus. Zipher bets on one input.\n\nType what you want. The wallet figures out the chain, the address format, the fee, the confirmation. You approve.\n\nPrivacy is not a feature toggle — Zcash shielded by default. And the same Rust engine that powers your phone also runs headless for AI agents, with spending policy, audit logs, and approval gates built in."
+  },
+  {
+    "id": "action",
+    "question": "What can Action do?",
+    "keywords": [
+      "action",
+      "send",
+      "swap",
+      "bet",
+      "pay",
+      "polymarket",
+      "bridge",
+      "sweep",
+      "vote",
+      "features"
+    ],
+    "answer": "Action is Zipher's conversational interface — and the direction every wallet should go. Instead of navigating screens, you describe what you want.\n\n\"send 5 zec to alice\" · \"swap 0.1 eth to zec\" · \"bet $20 on trump wins\" · \"pay this invoice\"\n\nThe app parses intent using an on-device AI model. You see a confirmation with all details before anything signs. No surprises.\n\nAction is live in the beta alongside the classic wallet view. Over time, it becomes the whole UI."
+  },
+  {
+    "id": "company",
+    "question": "Who built this?",
+    "keywords": [
+      "atmosphere",
+      "company",
+      "team",
+      "labs",
+      "who built",
+      "who made"
+    ],
+    "answer": "Atmosphere Labs — open-source infrastructure making Zcash accessible for users and developers.\n\nSame team behind CipherScan (privacy explorer) and CipherPay (shielded payment processing). Wyoming, USA.",
+    "cta": [
+      {
+        "label": "atmospherelabs.dev",
+        "href": "https://atmospherelabs.dev"
+      }
+    ]
+  }
+]
