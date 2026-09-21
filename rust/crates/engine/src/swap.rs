@@ -6,15 +6,14 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 const BASE_URL: &str = "https://1click.chaindefuser.com/v0";
-const AFFILIATE_ADDRESS: &str = "cipherscan.near";
-const AFFILIATE_FEE_BPS: u32 = 50;
+// No affiliate. Zumbra takes no fee on swaps and names no fee recipient in quotes.
 const REFERRAL: &str = "zumbra";
 const QUOTE_WAITING_TIME_MS: u32 = 3000;
 
-const DEFAULT_API_KEY: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjIwMjUtMDEtMTItdjEifQ.eyJ2IjoxLCJrZXlfdHlwZSI6ImRpc3RyaWJ1dGlvbl9jaGFubmVsIiwicGFydG5lcl9pZCI6ImNpcGhlcnNjYW4iLCJpYXQiOjE3NzEzMTg2NjEsImV4cCI6MTgwMjg1NDY2MX0.Lcyle1wo7WnNT8eXrL7oOk3cpZakyjkGqBYjCpoFCkxtQC_Et1FE_3mK0nRODoYwutOuDPkw-JIRl47hmGhSmdCl-5r8R3Tw4LrQk-UY0g5a6WWfyjlrqTPeyexnRyKN-ry6Mm3kDwJm4g9uDxUFhea11lOnbNyD4SyuWRi_6Tp3Ch_ucTV2O6il5m8ZRhWi3yKV9yl4SUf324chPtLefwiTxJB-psA05vU0jurKpjO18t37Vuty6On1rgAQqMfm_h2KOwtjxhFk5ey5vk6dvfMfTsvsH08_bYeK45nLihtDtsPyKQKV1snhSwyjdzWZB5R5fZHSn7x4gw_bEf91FA";
+// No baked-in API key. NEAR_INTENTS_KEY must be set by the operator; unset means no Authorization header.
 
 fn api_key() -> String {
-    std::env::var("NEAR_INTENTS_KEY").unwrap_or_else(|_| DEFAULT_API_KEY.to_string())
+    std::env::var("NEAR_INTENTS_KEY").unwrap_or_default()
 }
 
 // ---------------------------------------------------------------------------
@@ -180,10 +179,7 @@ pub async fn get_quote(
         "recipientType": "DESTINATION_CHAIN",
         "deadline": deadline,
         "quoteWaitingTimeMs": QUOTE_WAITING_TIME_MS,
-        "appFees": [{
-            "recipient": AFFILIATE_ADDRESS,
-            "fee": AFFILIATE_FEE_BPS,
-        }],
+        "appFees": [],
         "referral": REFERRAL,
     });
 
@@ -260,12 +256,9 @@ fn parse_quote_response(json: &serde_json::Value, expected: &serde_json::Value) 
             return Err(anyhow!("Duplicate quote fee recipient"));
         }
     }
-    // NEAR normalizes our configured 50 bps into its documented 50/50 split.
-    const PROTOCOL: &str = "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd";
-    let direct = std::collections::BTreeMap::from([(AFFILIATE_ADDRESS, u64::from(AFFILIATE_FEE_BPS))]);
-    let split = std::collections::BTreeMap::from([(AFFILIATE_ADDRESS, 25), (PROTOCOL, 25)]);
-    if parsed_fees != direct && parsed_fees != split {
-        return Err(anyhow!("Provider quote fees changed"));
+    // We request no app fees; a quote that adds any fee recipient is rejected.
+    if !parsed_fees.is_empty() {
+        return Err(anyhow!("Provider quote added fees we did not request"));
     }
     let quote = json.get("quote").ok_or_else(|| anyhow!("Missing quote"))?;
     let string = |key: &str| -> Result<String> {
@@ -412,7 +405,7 @@ mod tests {
             "slippageTolerance": 100, "originAsset": "zec", "destinationAsset": "sol",
             "amount": "1000000", "refundTo": "refund", "refundType": "ORIGIN_CHAIN",
             "recipient": "recipient", "recipientType": "DESTINATION_CHAIN", "depositType": "ORIGIN_CHAIN",
-            "deadline": chrono_deadline(2), "appFees": [{"recipient": AFFILIATE_ADDRESS, "fee": 50}]});
+            "deadline": chrono_deadline(2), "appFees": []});
         let response = serde_json::json!({"quoteRequest": request, "quote": {
             "amountIn": "1000000", "amountOut": "100", "minAmountOut": "99",
             "depositAddress": "deposit", "deadline": chrono_deadline(1)}});
@@ -435,13 +428,10 @@ mod tests {
             altered["quote"][key] = serde_json::json!(value);
             assert!(parse_quote_response(&altered, &request).is_err(), "{key}");
         }
-        let mut normalized = response.clone();
-        normalized["quoteRequest"]["appFees"] = serde_json::json!([
-            {"recipient": AFFILIATE_ADDRESS, "fee": 25, "limitOrderId": null},
-            {"recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd", "fee": 25}]);
-        assert!(parse_quote_response(&normalized, &request).is_ok());
-        normalized["quoteRequest"]["appFees"][1]["recipient"] = serde_json::json!("attacker");
-        assert!(parse_quote_response(&normalized, &request).is_err());
+        // We request no app fees; any fee recipient the provider adds is rejected.
+        let mut with_fee = response.clone();
+        with_fee["quoteRequest"]["appFees"] = serde_json::json!([{"recipient": "attacker", "fee": 25}]);
+        assert!(parse_quote_response(&with_fee, &request).is_err());
     }
 
     #[test]

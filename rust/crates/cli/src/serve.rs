@@ -12,7 +12,7 @@ use zcash_protocol::consensus::Network;
 
 use crate::Config;
 
-const CIPHERPAY_API: &str = "https://api.cipherpay.app";
+const CIPHERPAY_API: &str = "https://cipherpay-url-not-configured.invalid"; // set CIPHERPAY_URL explicitly
 const VERIFY_PATH: &str = "/api/x402/verify";
 const DEFAULT_PRICE_ZATOSHIS: u64 = 10_000; // 0.0001 ZEC per call
 

@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
-const CIPHERPAY_BASE: &str = "https://api.cipherpay.app";
+// No default merchant API. Set CIPHERPAY_URL explicitly; the .invalid host fails every request with a clear error.
+const CIPHERPAY_BASE: &str = "https://cipherpay-url-not-configured.invalid";
 
 fn resolve_url() -> String {
     std::env::var("CIPHERPAY_URL").unwrap_or_else(|_| CIPHERPAY_BASE.to_string())

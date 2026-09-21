@@ -698,7 +698,7 @@ fn print_err(e: &anyhow::Error, human: bool) {
 // Config resolution
 // ---------------------------------------------------------------------------
 
-const DEFAULT_MAINNET_SERVER: &str = "https://lightwalletd.mainnet.cipherscan.app:443";
+const DEFAULT_MAINNET_SERVER: &str = "https://zec.rocks:443";
 const DEFAULT_TESTNET_SERVER: &str = "https://testnet.zec.rocks:443";
 
 pub struct Config {

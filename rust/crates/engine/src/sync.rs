@@ -155,7 +155,6 @@ impl Default for SyncRuntimeConfig {
 pub fn known_lightwalletd_servers(params: &Network) -> Vec<String> {
     match params {
         Network::MainNetwork => vec![
-            "https://lightwalletd.mainnet.cipherscan.app:443".to_string(),
             "https://zec.rocks:443".to_string(),
             "https://na.zec.rocks:443".to_string(),
             "https://sa.zec.rocks:443".to_string(),

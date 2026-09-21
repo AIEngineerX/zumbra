@@ -313,7 +313,7 @@ struct IronwoodResumeParams {}
 struct HitlPairParams {
     /// Device name for the mobile wallet (e.g., "iPhone 15")
     device_name: String,
-    /// Override relay URL (default: https://relay.atmospherelabs.dev)
+    /// Relay URL for the approval channel (no default; unset disables the relay)
     relay_url: Option<String>,
 }
 
@@ -1658,7 +1658,7 @@ fn find_dest_token<'a>(
 // Configuration
 // ---------------------------------------------------------------------------
 
-const DEFAULT_MAINNET_SERVER: &str = "https://lightwalletd.mainnet.cipherscan.app:443";
+const DEFAULT_MAINNET_SERVER: &str = "https://zec.rocks:443";
 const DEFAULT_TESTNET_SERVER: &str = "https://testnet.zec.rocks:443";
 
 // ---------------------------------------------------------------------------

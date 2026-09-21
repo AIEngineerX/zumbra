@@ -183,7 +183,7 @@ pub fn save_sessions(data_dir: &str, store: &SessionStore) -> Result<()> {
 // CipherPay session API client
 // ---------------------------------------------------------------------------
 
-const CIPHERPAY_SESSION_BASE: &str = "https://api.cipherpay.app";
+const CIPHERPAY_SESSION_BASE: &str = "https://cipherpay-url-not-configured.invalid"; // set CIPHERPAY_URL explicitly
 
 fn resolve_cipherpay_url(override_url: Option<&str>) -> String {
     if let Some(url) = override_url {

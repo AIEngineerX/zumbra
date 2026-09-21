@@ -20,7 +20,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::time::Duration;
 
-const DEFAULT_RELAY_URL: &str = "https://relay.atmospherelabs.dev";
+// No default relay. An empty relay_url disables the relay until the operator configures one.
+const DEFAULT_RELAY_URL: &str = "";
 const APPROVAL_TTL: Duration = Duration::from_secs(300);
 
 // ---------------------------------------------------------------------------
