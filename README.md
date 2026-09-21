@@ -20,12 +20,10 @@ contribute upstream and we are not affiliated with them.
 
 ## What it will be
 
-Two things, built in this order:
-
-1. **The agent wallet.** A headless Zcash wallet: a Rust engine, a CLI, and an MCP server that any
-   MCP client (Hermes, OpenClaw, Claude, Cursor) can use. The spending policy and the human
-   approval step are enforced by something the agent cannot edit or call. Shielded sends only.
-   No cloud, no custody, no telemetry, no baked-in third-party endpoints.
+**The agent wallet.** A headless Zcash wallet: a Rust engine, a CLI, and an MCP server that any
+MCP client (Hermes, OpenClaw, Claude, Cursor) can use. The spending policy and the human
+approval step are enforced by something the agent cannot edit or call. Shielded sends only.
+No cloud, no custody, no telemetry, no baked-in third-party endpoints.
 
 ## Scope
 
