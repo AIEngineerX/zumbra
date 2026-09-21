@@ -17,7 +17,8 @@ is attacking you.
 ## Status: what holds today, and what does not
 
 This repository is a hard fork of Zipher at its `feat/ironwood` branch, staged 2026-09-20. It is
-**pre-alpha and not safe to fund** until the agent-safety work below is done. A source audit was
+**pre-alpha**: run it on testnet, and do not hand an agent mainnet funds until the agent-safety work
+below is done. A source audit was
 done at fork time; its findings are summarised here and tracked privately by the owner.
 
 Holds on the current code (verified by reading, not yet by running):

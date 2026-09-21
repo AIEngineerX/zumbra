@@ -5,9 +5,9 @@
 > Shielded Zcash for humans and agents. Keys on your machine,
 > a spending policy the agent cannot touch.
 
-**Status: pre-alpha, not safe to fund.** The code builds a working Zcash light wallet, but the
-agent-safety layer is not finished. Read [`SECURITY.md`](SECURITY.md) for exactly what holds and
-what does not. The running plan is kept privately by the owner; the public summary is there too.
+**Status: pre-alpha.** The engine is a working Zcash light wallet. The agent-safety layer on top
+is not finished, so run it on testnet, and do not hand an agent mainnet funds until the items in
+[`SECURITY.md`](SECURITY.md) are closed. That file says exactly what holds today and what does not.
 
 **Zumbra is a fork of [Zipher](https://github.com/atmospherelabs-dev/zipher-app) by Atmosphere
 Labs, MIT-licensed, taken at their `feat/ironwood` branch on 2026-09-20 with full history.**
