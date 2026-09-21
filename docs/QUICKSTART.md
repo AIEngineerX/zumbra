@@ -115,6 +115,24 @@ zumbra --testnet daemon lock         # zeroise the seed in memory; reads keep wo
 zumbra --testnet daemon stop
 ```
 
+## Testing round: what to try, what to expect
+
+This is pre-alpha on testnet. Run the steps above with TAZ from a public faucet, then try to break
+the two things the design promises: the seed stays on your machine, and the agent cannot spend
+past the policy.
+
+Expect these to work: init, restore from stdin, sync, balance, address, a two-step send within the
+caps, the audit log, and every MCP read tool. Expect these to be refused, and report it if they
+are not: a send above `max_per_tx` or `daily_limit`, a send to an address outside a non-empty
+allowlist, a send above `approval_threshold` (refused outright today; operator approval is not
+built yet), any spend with a missing or corrupt `policy.toml`, and any MCP call that tries to
+unlock, approve, or change the policy.
+
+Known gaps are listed in [`SECURITY.md`](../SECURITY.md); do not report those. Everything else,
+including anything that prints, logs, or writes a seed where it should not, goes to the
+repository's issues, or to a private security advisory if it touches keys or the spend path.
+Never paste a seed phrase into an issue, even a testnet one.
+
 ## Global flags
 
 | Flag | Environment | Meaning |
