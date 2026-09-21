@@ -49,7 +49,7 @@ const doc = (w, h, inner, withStars = true) =>
 render(doc(1600, 900,
   mark(640, 150, 320) +
   word(800, 620, 120, PALE).replace(`x="800"`, `x="800" text-anchor="middle"`) +
-  mono(800, 690, 26, "SHIELDED ZCASH FOR YOU AND YOUR AGENTS", MIST, "middle") +
+  mono(800, 690, 26, "SHIELDED ZCASH FOR HUMANS AND AGENTS", MIST, "middle") +
   mono(800, 800, 20, "SHIELDED BY DEFAULT · KEYS ON YOUR MACHINE · POLICY THE AGENT CANNOT TOUCH", MIST, "middle")
 ), 1600, "announce-1600x900.png");
 
@@ -57,7 +57,7 @@ render(doc(1600, 900,
 render(doc(1080, 1080,
   mark(340, 200, 400) +
   word(540, 760, 104, PALE).replace(`x="540"`, `x="540" text-anchor="middle"`) +
-  mono(540, 830, 24, "SHIELDED ZCASH FOR YOU AND YOUR AGENTS", MIST, "middle")
+  mono(540, 830, 24, "SHIELDED ZCASH FOR HUMANS AND AGENTS", MIST, "middle")
 ), 1080, "square-1080.png");
 
 // 3. "What it is" card: three lines, no marketing
@@ -67,7 +67,7 @@ render(doc(1600, 900,
   lines(120, 420, 56, 96, [
     "A Zcash wallet an AI agent can hold.",
     "Shielded sends only. Keys never leave the machine.",
-    "The spending policy is enforced where the agent cannot reach.",
+    "Policy runs before any key is loaded.",
   ], PALE, "start", 700) +
   mono(120, 800, 20, "PRE-ALPHA · MIT · OPEN SOURCE", MIST)
 ), 1600, "what-it-is-1600x900.png");
