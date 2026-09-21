@@ -2,6 +2,10 @@
 
 # Zumbra
 
+[![ci](https://github.com/AIEngineerX/zumbra/actions/workflows/ci.yml/badge.svg)](https://github.com/AIEngineerX/zumbra/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-F2C14E.svg)](LICENSE.md)
+[![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-1A1F2B.svg)](SECURITY.md)
+
 > Shielded Zcash for humans and agents. Keys on your machine,
 > a spending policy the agent cannot touch.
 
@@ -65,6 +69,21 @@ cd ../mcp-server && cargo build --locked --release            # the MCP server
 ```
 
 Use testnet. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Roadmap
+
+In order, each with a done-criterion rather than a date:
+
+1. **Run it as forked.** Build from source, shielded testnet sends through the CLI and the MCP
+   server, unmodified.
+2. **Make it ours.** Rename, remove the parent's endpoints and affiliate key, switch off what is
+   not the agent wallet.
+3. **Make it safe for an agent.** Close the listed gaps in [`SECURITY.md`](SECURITY.md), each
+   with a test that fails on the fork point and passes here.
+4. **Privacy posture.** Fresh addresses per swap, Tor/SOCKS for the light client, encrypted
+   wallet database.
+5. **First agent on mainnet.** Capped wallet, operator approval over a channel the agent cannot
+   call, prompt-injection tests recorded as integration tests.
 
 ## License
 
