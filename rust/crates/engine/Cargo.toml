@@ -35,7 +35,7 @@ zcash_primitives = { workspace = true, features = ["non-standard-fees"] }
 zip321 = { workspace = true }
 zcash_proofs = { workspace = true, features = ["local-prover"] }
 zcash_transparent = { workspace = true }
-zcash_script = "0.4"
+zcash_script = "0.5"
 zip32 = "0.2"
 sapling-crypto = { workspace = true }
 orchard = { workspace = true }
