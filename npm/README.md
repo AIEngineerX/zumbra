@@ -1,37 +1,37 @@
-# @cipherpay/zipher-cli
+# @cipherpay/zumbra
 
 Headless Zcash light wallet for AI agents. Shielded payments, spending policies, and x402 paywall access — from the command line or via MCP.
 
 ## Install
 
 ```bash
-npm install -g @cipherpay/zipher-cli
+npm install -g @cipherpay/zumbra
 ```
 
-Installs two binaries: `zipher` (CLI) and `zipher-mcp-server` (MCP server for AI agents).
+Installs two binaries: `zumbra` (CLI) and `zumbra-mcp` (MCP server for AI agents).
 
 ## Quick start
 
 ```bash
 # One-command setup: creates encrypted wallet, prints seed phrase + MCP config
-zipher wallet init
+zumbra wallet init
 
 # Check balance (auto-syncs)
-zipher balance
+zumbra balance
 
 # Send ZEC
-zipher send --to <address> --amount 0.01
+zumbra send --to <address> --amount 0.01
 
 # Pay any 402 paywall
-zipher pay https://api.example.com/premium/weather
+zumbra pay https://api.example.com/premium/weather
 
 # Cross-chain swap (ZEC → SOL, USDC, etc.)
-zipher swap quote --to SOL --amount 0.5
-zipher swap execute --to SOL --amount 0.5 --destination <solana-address>
+zumbra swap quote --to SOL --amount 0.5
+zumbra swap execute --to SOL --amount 0.5 --destination <solana-address>
 
 # Session-based payments (prepaid credit)
-zipher session open --url https://api.example.com --amount 0.1
-zipher session request --id <session-id> --endpoint /data
+zumbra session open --url https://api.example.com --amount 0.1
+zumbra session request --id <session-id> --endpoint /data
 ```
 
 ## MCP server
@@ -41,14 +41,14 @@ For AI agent frameworks (Claude, Cursor, etc.), add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "zipher": {
-      "command": "zipher-mcp-server"
+    "zumbra": {
+      "command": "zumbra-mcp"
     }
   }
 }
 ```
 
-The MCP server loads the wallet seed from the encrypted OWS vault created by `zipher wallet init`. No environment variables needed.
+The MCP server loads the wallet seed from the encrypted OWS vault created by `zumbra wallet init`. No environment variables needed.
 
 ### MCP tools
 
@@ -79,7 +79,7 @@ The MCP server loads the wallet seed from the encrypted OWS vault created by `zi
 
 ## Spending policies
 
-Default policy (created by `zipher wallet init`):
+Default policy (created by `zumbra wallet init`):
 
 ```toml
 max_per_tx = 1000000      # 0.01 ZEC per transaction
@@ -88,7 +88,7 @@ approval_threshold = 5000000  # 0.05 ZEC requires human approval
 allowlist = []             # Empty = any address allowed
 ```
 
-Edit at `~/.zipher/mainnet/policy.toml` or use `set_policy` via MCP.
+Edit at `~/.zumbra/mainnet/policy.toml` or use `set_policy` via MCP.
 
 ## Supported platforms
 
@@ -101,5 +101,5 @@ Edit at `~/.zipher/mainnet/policy.toml` or use `set_policy` via MCP.
 
 ## Links
 
-- [GitHub](https://github.com/atmospherelabs-dev/zipher-app)
+- [GitHub](https://github.com/atmospherelabs-dev/zumbra-app)
 - [CipherPay](https://cipherpay.app)

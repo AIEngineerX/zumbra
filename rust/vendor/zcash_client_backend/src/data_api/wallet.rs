@@ -35,7 +35,7 @@ to a wallet-internal shielded address, as described in [ZIP 316](https://zips.z.
 //! [`propose_transfer`]: crate::data_api::wallet::propose_transfer
 
 use nonempty::NonEmpty;
-use zipher_rng_compat::OS_RNG as OsRng;
+use zumbra_rng_compat::OS_RNG as OsRng;
 use std::{
     num::NonZeroU32,
     ops::{Add, Sub},

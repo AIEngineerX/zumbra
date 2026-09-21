@@ -1,4 +1,4 @@
-use zipher_rng_compat::OS_RNG as OsRng;
+use zumbra_rng_compat::OS_RNG as OsRng;
 use sapling::{
     BatchValidator, Bundle,
     bundle::Authorized,

@@ -1,17 +1,17 @@
 {
-  "name": "zipher-mcp-server",
-  "title": "Zipher — Shielded Wallet for AI Agents",
+  "name": "zumbra-mcp",
+  "title": "Zumbra — Shielded Wallet for AI Agents",
   "version": "0.2.0",
   "description": "Headless Zcash wallet with encrypted vault, spending policies, and x402 paywall access",
-  "homepage": "https://zipher.app",
-  "repository": "https://github.com/atmospherelabs-dev/zipher-app",
+  "homepage": "https://zumbra.app",
+  "repository": "https://github.com/atmospherelabs-dev/zumbra-app",
   "transport": "stdio",
   "install": {
-    "npm": "npm install -g @cipherpay/zipher-cli",
-    "setup": "zipher wallet init"
+    "npm": "npm install -g @cipherpay/zumbra",
+    "setup": "zumbra wallet init"
   },
   "config": {
-    "command": "zipher-mcp-server"
+    "command": "zumbra-mcp"
   },
   "tools": [
     {

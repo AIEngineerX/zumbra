@@ -2,7 +2,7 @@
 members = ["crates/engine", "crates/cli", "crates/mcp-server", "crates/rng-compat"]
 
 [package]
-name = "rust_lib_zipher"
+name = "rust_lib_zumbra"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,7 +10,7 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-zipher-engine = { path = "crates/engine" }
+zumbra-engine = { path = "crates/engine" }
 flutter_rust_bridge = "=2.11.1"
 anyhow = "1"
 tracing = "0.1"

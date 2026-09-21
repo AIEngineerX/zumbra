@@ -1,6 +1,6 @@
-# Zipher Operator — OpenClaw Skill
+# Zumbra Operator — OpenClaw Skill
 
-You are an AI agent with access to a Zcash light wallet via `zipher-cli`. You can check balances, view transactions, and send shielded ZEC on behalf of the user.
+You are an AI agent with access to a Zcash light wallet via `zumbra`. You can check balances, view transactions, and send shielded ZEC on behalf of the user.
 
 ## Operating Modes
 
@@ -9,13 +9,13 @@ You are an AI agent with access to a Zcash light wallet via `zipher-cli`. You ca
 Run these commands directly. They require no secrets and cannot modify wallet state:
 
 ```bash
-zipher-cli balance                        # wallet balance
-zipher-cli address                        # wallet addresses
-zipher-cli transactions --limit 10        # recent transactions
-zipher-cli sync status                    # sync progress
-zipher-cli policy show                    # spending policy
-zipher-cli audit --limit 20              # recent audit log
-zipher-cli info                          # version + config
+zumbra balance                        # wallet balance
+zumbra address                        # wallet addresses
+zumbra transactions --limit 10        # recent transactions
+zumbra sync status                    # sync progress
+zumbra policy show                    # spending policy
+zumbra audit --limit 20              # recent audit log
+zumbra info                          # version + config
 ```
 
 Always parse the JSON output. Add `--human` only when displaying results to the user.
@@ -24,9 +24,9 @@ Always parse the JSON output. Add `--human` only when displaying results to the 
 
 For operations involving seed phrases or wallet creation, **do not execute them yourself**. Instead, give the user exact instructions:
 
-- **Wallet creation:** Tell the user to run `zipher-cli wallet create` themselves and securely store the seed phrase.
-- **Wallet restore:** Tell the user to run `zipher-cli wallet restore --birthday <height>` and provide the seed via `ZIPHER_SEED` env var or stdin.
-- **Sync start:** Tell the user to run `zipher-cli sync start` — this is a long-running blocking operation.
+- **Wallet creation:** Tell the user to run `zumbra wallet create` themselves and securely store the seed phrase.
+- **Wallet restore:** Tell the user to run `zumbra wallet restore --birthday <height>` and provide the seed via `ZUMBRA_SEED` env var or stdin.
+- **Sync start:** Tell the user to run `zumbra sync start` — this is a long-running blocking operation.
 
 **Never ask the user to paste a mnemonic, passphrase, or private key into the chat.**
 
@@ -66,7 +66,7 @@ Only after explicit user confirmation:
 ./scripts/confirm_send.sh
 ```
 
-The seed must be available in `ZIPHER_SEED`. The script will sign and broadcast the transaction, then clean up the pending proposal.
+The seed must be available in `ZUMBRA_SEED`. The script will sign and broadcast the transaction, then clean up the pending proposal.
 
 ### 4. x402 Paywall Payment Mode
 
@@ -87,7 +87,7 @@ Verify the wallet is synced and has enough balance to cover the requested amount
 #### Step 3: Propose and review
 
 ```bash
-zipher-cli x402 propose --body '<THE 402 RESPONSE BODY JSON>' --context-id <CONTEXT>
+zumbra x402 propose --body '<THE 402 RESPONSE BODY JSON>' --context-id <CONTEXT>
 ```
 
 Present the summary: destination, amount, fee. If the amount exceeds `approval_threshold`, ask the user for explicit approval.
@@ -135,13 +135,13 @@ Common error codes and what to do:
 - `CONTEXT_REQUIRED` — retry with `--context-id`
 - `RATE_LIMITED` — wait before retrying
 - `INSUFFICIENT_FUNDS` — not enough balance, wait for funding
-- `SYNC_REQUIRED` — wallet needs to sync, run `zipher-cli sync start`
+- `SYNC_REQUIRED` — wallet needs to sync, run `zumbra sync start`
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `ZIPHER_SEED` | Seed phrase for signing (never set this in chat) |
-| `ZIPHER_DATA_DIR` | Override wallet data directory |
-| `ZIPHER_TESTNET` | Set to `1` for testnet |
-| `ZIPHER_SERVER` | Override lightwalletd server URL |
+| `ZUMBRA_SEED` | Seed phrase for signing (never set this in chat) |
+| `ZUMBRA_DATA_DIR` | Override wallet data directory |
+| `ZUMBRA_TESTNET` | Set to `1` for testnet |
+| `ZUMBRA_SERVER` | Override lightwalletd server URL |

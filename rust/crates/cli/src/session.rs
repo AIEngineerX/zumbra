@@ -15,15 +15,15 @@ pub async fn cmd_session_open(
     ensure_sapling_params(&cfg.data_dir).await?;
     sync_if_needed(cfg).await?;
 
-    let memo = format!("zipher:session:{}", merchant_id);
+    let memo = format!("zumbra:session:{}", merchant_id);
 
     auto_open(cfg).await?;
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
-    let daily_spent = zipher_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
     if let Err(violation) =
-        zipher_engine::policy::check_proposal(&policy, &pay_to, deposit, &context_id, daily_spent)
+        zumbra_engine::policy::check_proposal(&policy, &pay_to, deposit, &context_id, daily_spent)
     {
-        zipher_engine::audit::log_event(
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "session_open",
             Some(&pay_to),
@@ -36,8 +36,8 @@ pub async fn cmd_session_open(
         .ok();
         return Err(anyhow::anyhow!("{}", violation));
     }
-    if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-        zipher_engine::audit::log_event(
+    if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "session_open",
             Some(&pay_to),
@@ -52,13 +52,13 @@ pub async fn cmd_session_open(
     }
 
     let (send_amount, fee, _) =
-        zipher_engine::send::propose_send(&pay_to, deposit, Some(memo), false, false).await?;
+        zumbra_engine::send::propose_send(&pay_to, deposit, Some(memo), false, false).await?;
 
     let seed = read_seed(&cfg.data_dir)?;
-    let txid = match zipher_engine::send::confirm_send(&seed).await {
+    let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
-            zipher_engine::policy::record_confirm();
-            zipher_engine::audit::log_event(
+            zumbra_engine::policy::record_confirm();
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "session_open",
                 Some(&pay_to),
@@ -72,7 +72,7 @@ pub async fn cmd_session_open(
             txid
         }
         Err(e) => {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "session_open",
                 Some(&pay_to),
@@ -90,7 +90,7 @@ pub async fn cmd_session_open(
     delete_pending(&cfg.data_dir);
 
     let session =
-        zipher_engine::session::open_session(None, &txid, &merchant_id, &server_url, &cfg.data_dir)
+        zumbra_engine::session::open_session(None, &txid, &merchant_id, &server_url, &cfg.data_dir)
             .await?;
 
     print_ok(&session, cfg.human, |s| {
@@ -102,7 +102,7 @@ pub async fn cmd_session_open(
         println!("  Deposit:  {}", s.deposit_txid);
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -115,7 +115,7 @@ pub async fn cmd_session_request(cfg: &Config, url: String, method: String) -> R
     let server_url = format!("{}//{}", url.split("//").next().unwrap_or("https:"), host);
 
     let session =
-        zipher_engine::session::find_session(&cfg.data_dir, &server_url).ok_or_else(|| {
+        zumbra_engine::session::find_session(&cfg.data_dir, &server_url).ok_or_else(|| {
             anyhow::anyhow!(
                 "No active session for {}. Use `session open` first.",
                 server_url
@@ -123,10 +123,10 @@ pub async fn cmd_session_request(cfg: &Config, url: String, method: String) -> R
         })?;
 
     let (status, body, remaining) =
-        zipher_engine::session::session_request(&session, &url, &method).await?;
+        zumbra_engine::session::session_request(&session, &url, &method).await?;
 
     if let Some(rem) = remaining {
-        let mut store = zipher_engine::session::load_sessions(&cfg.data_dir);
+        let mut store = zumbra_engine::session::load_sessions(&cfg.data_dir);
         if let Some(s) = store
             .sessions
             .iter_mut()
@@ -134,7 +134,7 @@ pub async fn cmd_session_request(cfg: &Config, url: String, method: String) -> R
         {
             s.balance_remaining = rem;
         }
-        zipher_engine::session::save_sessions(&cfg.data_dir, &store).ok();
+        zumbra_engine::session::save_sessions(&cfg.data_dir, &store).ok();
     }
 
     #[derive(Serialize)]
@@ -170,12 +170,12 @@ pub async fn cmd_session_request(cfg: &Config, url: String, method: String) -> R
 }
 
 pub async fn cmd_session_list(cfg: &Config) -> Result<()> {
-    let sessions = zipher_engine::session::list_sessions(&cfg.data_dir);
+    let sessions = zumbra_engine::session::list_sessions(&cfg.data_dir);
 
     #[derive(Serialize)]
     struct ListResult {
         total: usize,
-        sessions: Vec<zipher_engine::session::Session>,
+        sessions: Vec<zumbra_engine::session::Session>,
     }
 
     print_ok(
@@ -201,7 +201,7 @@ pub async fn cmd_session_list(cfg: &Config) -> Result<()> {
 }
 
 pub async fn cmd_session_close(cfg: &Config, session_id: String) -> Result<()> {
-    let summary = zipher_engine::session::close_session(None, &session_id, &cfg.data_dir).await?;
+    let summary = zumbra_engine::session::close_session(None, &session_id, &cfg.data_dir).await?;
 
     print_ok(&summary, cfg.human, |s| {
         println!("Session closed.");

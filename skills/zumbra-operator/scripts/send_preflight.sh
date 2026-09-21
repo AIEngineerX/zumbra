@@ -6,10 +6,10 @@ set -euo pipefail
 #
 # Does NOT require the seed phrase. Safe to run directly.
 
-ZIPHER_CLI="${ZIPHER_CLI:-zipher-cli}"
-FLAGS="${ZIPHER_FLAGS:-}"
+ZUMBRA_CLI="${ZUMBRA_CLI:-zumbra}"
+FLAGS="${ZUMBRA_FLAGS:-}"
 
-proposal_json=$($ZIPHER_CLI $FLAGS send propose "$@" 2>/dev/null)
+proposal_json=$($ZUMBRA_CLI $FLAGS send propose "$@" 2>/dev/null)
 exit_code=$?
 
 echo "$proposal_json" | python3 -c "
@@ -26,8 +26,8 @@ print(f\"  Amount: {p['send_amount_zec']:.8f} ZEC ({p['send_amount']} zat)\")
 print(f\"  Fee:    {p['fee_zec']:.8f} ZEC ({p['fee']} zat)\")
 print(f\"  Total:  {p['total']} zat\")
 print()
-print('Run \`zipher-cli send confirm\` (or ./confirm_send.sh) to sign and broadcast.')
-print('ZIPHER_SEED must be set in the environment.')
+print('Run \`zumbra send confirm\` (or ./confirm_send.sh) to sign and broadcast.')
+print('ZUMBRA_SEED must be set in the environment.')
 "
 
 exit $exit_code

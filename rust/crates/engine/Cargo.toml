@@ -1,5 +1,5 @@
 [package]
-name = "zipher-engine"
+name = "zumbra-engine"
 version = "0.1.0"
 edition = "2021"
 

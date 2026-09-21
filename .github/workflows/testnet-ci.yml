@@ -18,8 +18,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  ZIPHER_DATA_DIR: /tmp/zipher-testnet
-  ZIPHER_CHAIN: testnet
+  ZUMBRA_DATA_DIR: /tmp/zumbra-testnet
+  ZUMBRA_CHAIN: testnet
 
 jobs:
   test:
@@ -60,24 +60,24 @@ jobs:
         run: node --test ../npm/test/*.test.js
 
       - name: Run unit tests
-        run: cargo test --locked --workspace --exclude rust_lib_zipher
+        run: cargo test --locked --workspace --exclude rust_lib_zumbra
 
       - name: Build CLI (release)
-        run: cargo build --locked --release -p zipher-cli
+        run: cargo build --locked --release -p zumbra
 
       - name: Smoke test - CLI help
-        run: ./target/release/zipher-cli --help
+        run: ./target/release/zumbra --help
 
       - name: Smoke test - version
-        run: ./target/release/zipher-cli --version
+        run: ./target/release/zumbra --version
 
       - name: Build MCP server
-        run: cargo build --locked --release -p zipher-mcp-server
+        run: cargo build --locked --release -p zumbra-mcp
 
       - name: Smoke test - MCP version and help
         run: |
-          ./target/release/zipher-mcp-server --version
-          ./target/release/zipher-mcp-server --help
+          ./target/release/zumbra-mcp --version
+          ./target/release/zumbra-mcp --help
 
       - name: Clippy
-        run: cargo clippy --locked -p zipher-cli -p zipher-mcp-server -p zipher-engine
+        run: cargo clippy --locked -p zumbra -p zumbra-mcp -p zumbra-engine

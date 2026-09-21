@@ -34,7 +34,7 @@ jobs:
           security default-keychain -s $HOME/build.keychain
           security unlock-keychain -p R5qx5GGokNBm $HOME/build.keychain
           CERTIFICATE_PATH=$RUNNER_TEMP/Certificates.p12
-          PROFILE_PATH=$RUNNER_TEMP/Zipher_AppStore.mobileprovision
+          PROFILE_PATH=$RUNNER_TEMP/Zumbra_AppStore.mobileprovision
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
           security import "$CERTIFICATE_PATH" -P $KEY_PASSWORD -A -t cert -f pkcs12 -k $HOME/build.keychain
@@ -54,16 +54,16 @@ jobs:
       - name: Upload xcarchive
         uses: actions/upload-artifact@v4
         with:
-          name: Zipher.xcarchive
+          name: Zumbra.xcarchive
           path: ./build/ios/archive/Runner.xcarchive
           retention-days: 3
       - name: Archive Release
         run: |
           cd ./build/ios/archive
-          zip -r zipher.xcarchive.zip Runner.xcarchive
+          zip -r zumbra.xcarchive.zip Runner.xcarchive
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${GITHUB_REF_NAME}" ./build/ios/archive/zipher.xcarchive.zip --clobber
+          gh release upload "${GITHUB_REF_NAME}" ./build/ios/archive/zumbra.xcarchive.zip --clobber

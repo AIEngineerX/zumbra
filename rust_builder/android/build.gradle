@@ -1,6 +1,6 @@
 // The Android Gradle Plugin builds the native code with the Android NDK.
 
-group 'com.flutter_rust_bridge.rust_lib_zipher'
+group 'com.flutter_rust_bridge.rust_lib_zumbra'
 version '1.0'
 
 buildscript {
@@ -28,7 +28,7 @@ project.evaluationDependsOn(':app')
 
 android {
     if (project.android.hasProperty("namespace")) {
-        namespace 'com.flutter_rust_bridge.rust_lib_zipher'
+        namespace 'com.flutter_rust_bridge.rust_lib_zumbra'
     }
 
     // Bumping the plugin compileSdkVersion requires all clients of this plugin
@@ -54,5 +54,5 @@ android {
 apply from: "../cargokit/gradle/plugin.gradle"
 cargokit {
     manifestDir = "../../rust"
-    libname = "rust_lib_zipher"
+    libname = "rust_lib_zumbra"
 }

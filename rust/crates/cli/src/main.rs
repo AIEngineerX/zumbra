@@ -22,7 +22,7 @@ mod wallet;
 
 #[derive(Parser)]
 #[command(
-    name = "zipher-cli",
+    name = "zumbra",
     about = "Headless Zcash light wallet for AI agents",
     version
 )]
@@ -216,7 +216,7 @@ enum Commands {
     #[command(subcommand)]
     Ironwood(IronwoodCmd),
 
-    /// Pair with a Zipher mobile wallet for agent approval relay
+    /// Pair with a Zumbra mobile wallet for agent approval relay
     Pair {
         /// Device name for the mobile wallet
         #[arg(long, default_value = "mobile")]
@@ -728,7 +728,7 @@ fn resolve_config(cli: &Cli) -> Config {
     let net_suffix = if cli.testnet { "testnet" } else { "mainnet" };
     let data_dir = cli.data_dir.clone().unwrap_or_else(|| {
         let home = dirs::home_dir().expect("Cannot determine home directory");
-        home.join(".zipher")
+        home.join(".zumbra")
             .join(net_suffix)
             .to_string_lossy()
             .to_string()
@@ -759,7 +759,7 @@ async fn main() {
     let log_level = if cli.human {
         tracing::Level::INFO
     } else {
-        std::env::var("ZIPHER_LOG")
+        std::env::var("ZUMBRA_LOG")
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(tracing::Level::WARN)
@@ -988,9 +988,9 @@ async fn main() {
             IronwoodCmd::Resume => wallet::cmd_ironwood_resume(&cfg).await,
         },
         Commands::Pair { device_name, relay_url } => {
-            match zipher_engine::hitl::generate_pairing_code(&cfg.data_dir) {
+            match zumbra_engine::hitl::generate_pairing_code(&cfg.data_dir) {
                 Ok((channel_id, pairing_code)) => {
-                    match zipher_engine::hitl::complete_pairing(
+                    match zumbra_engine::hitl::complete_pairing(
                         &cfg.data_dir,
                         &channel_id,
                         &device_name,
@@ -1007,7 +1007,7 @@ async fn main() {
                                 |d| {
                                     eprintln!("Paired successfully!");
                                     eprintln!();
-                                    eprintln!("  Scan this in Zipher mobile app (Settings > Agent Pairing):");
+                                    eprintln!("  Scan this in Zumbra mobile app (Settings > Agent Pairing):");
                                     eprintln!();
                                     eprintln!("  {}", d.get("pairing_code").and_then(|v| v.as_str()).unwrap_or(""));
                                     eprintln!();

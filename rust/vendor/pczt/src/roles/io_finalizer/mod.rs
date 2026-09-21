@@ -3,7 +3,7 @@
 //! - Sets the appropriate bits in `Global.tx_modifiable` to 0.
 //! - Updates the various bsk values using the rcv information from spends and outputs.
 
-use zipher_rng_compat::OS_RNG as OsRng;
+use zumbra_rng_compat::OS_RNG as OsRng;
 use zcash_primitives::transaction::{sighash::SignableInput, txid::TxIdDigester};
 
 use crate::{

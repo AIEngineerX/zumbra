@@ -7,7 +7,7 @@ VERSION_DART="${WORKSPACE}/lib/src/version.dart"
 ARCHIVE_PATH="${WORKSPACE}/build/ios/archive/Runner.xcarchive"
 IPA_DIR="${WORKSPACE}/build/ios/ipa"
 EXPORT_OPTIONS="${WORKSPACE}/ios/ExportOptions.plist"
-EXPECTED_IPA="${IPA_DIR}/Zipher.ipa"
+EXPECTED_IPA="${IPA_DIR}/Zumbra.ipa"
 
 # ----------------------------------------------------------------------------
 # Version bump
@@ -144,7 +144,7 @@ echo "  commit:       $COMMIT"
 # project's build/ios/archive/ folder, which Organizer ignores.
 # ----------------------------------------------------------------------------
 ORGANIZER_DIR="$HOME/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)"
-ORGANIZER_ARCHIVE="${ORGANIZER_DIR}/Zipher_${NEW_VERSION}.xcarchive"
+ORGANIZER_ARCHIVE="${ORGANIZER_DIR}/Zumbra_${NEW_VERSION}.xcarchive"
 if [ -d "$ARCHIVE_PATH" ]; then
     mkdir -p "$ORGANIZER_DIR"
     rm -rf "$ORGANIZER_ARCHIVE"

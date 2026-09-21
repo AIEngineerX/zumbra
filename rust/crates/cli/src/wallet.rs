@@ -21,7 +21,7 @@ pub async fn cmd_info(cfg: &Config) {
 
     let data = InfoData {
         version: env!("CARGO_PKG_VERSION").to_string(),
-        engine: "zipher-engine".to_string(),
+        engine: "zumbra-engine".to_string(),
         network: if cfg.network == Network::TestNetwork {
             "testnet"
         } else {
@@ -33,7 +33,7 @@ pub async fn cmd_info(cfg: &Config) {
     };
 
     print_ok(data, cfg.human, |d| {
-        println!("zipher-cli {}", d.version);
+        println!("zumbra {}", d.version);
         println!("engine:  {}", d.engine);
         println!("network: {}", d.network);
         println!("data:    {}", d.data_dir);
@@ -45,7 +45,7 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
     ensure_data_dir(&cfg.data_dir)?;
     ensure_sapling_params(&cfg.data_dir).await?;
 
-    let db_path = std::path::PathBuf::from(&cfg.data_dir).join("zipher-data.sqlite");
+    let db_path = std::path::PathBuf::from(&cfg.data_dir).join("zumbra-data.sqlite");
     if db_path.exists() {
         return Err(anyhow::anyhow!(
             "Wallet already exists in {}. Use `wallet delete --confirm` first.",
@@ -85,21 +85,21 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
             .map_err(|e| anyhow::anyhow!("Failed to export seed from new wallet: {}", e))?
     };
 
-    let height = zipher_engine::wallet::fetch_latest_height(&cfg.server_url).await? as u32;
+    let height = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url).await? as u32;
 
-    zipher_engine::wallet::restore(
+    zumbra_engine::wallet::restore(
         &cfg.data_dir,
         &cfg.server_url,
         cfg.network,
         &seed_phrase,
         height,
         None,
-        None, // no Zipher vault — seed lives in OWS vault
+        None, // no Zumbra vault — seed lives in OWS vault
     )
     .await?;
 
     // Create default spending policy
-    let default_policy = zipher_engine::policy::SpendingPolicy {
+    let default_policy = zumbra_engine::policy::SpendingPolicy {
         max_per_tx: 1_000_000,         // 0.01 ZEC
         daily_limit: 10_000_000,       // 0.1 ZEC
         approval_threshold: 5_000_000, // 0.05 ZEC
@@ -107,10 +107,10 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
         min_spend_interval_ms: 0,
         allowlist: Vec::new(),
     };
-    zipher_engine::policy::save_policy(&cfg.data_dir, &default_policy)?;
+    zumbra_engine::policy::save_policy(&cfg.data_dir, &default_policy)?;
 
     // Get the wallet address for the MCP config
-    let addresses = zipher_engine::query::get_addresses()
+    let addresses = zumbra_engine::query::get_addresses()
         .await
         .unwrap_or_default();
     let address = addresses
@@ -118,12 +118,12 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
         .map(|a| a.address.clone())
         .unwrap_or_default();
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
 
     let mcp_config = serde_json::json!({
         "mcpServers": {
-            "zipher": {
-                "command": "zipher-mcp-server",
+            "zumbra": {
+                "command": "zumbra-mcp",
             }
         }
     });
@@ -135,7 +135,7 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
         address: String,
         data_dir: String,
         ows_wallet: String,
-        policy: zipher_engine::policy::SpendingPolicy,
+        policy: zumbra_engine::policy::SpendingPolicy,
         mcp_config: serde_json::Value,
     }
 
@@ -193,7 +193,7 @@ pub async fn cmd_wallet_restore(cfg: &Config, seed: &str, birthday: u32) -> Resu
     ensure_data_dir(&cfg.data_dir)?;
     ensure_sapling_params(&cfg.data_dir).await?;
 
-    let db_path = std::path::PathBuf::from(&cfg.data_dir).join("zipher-data.sqlite");
+    let db_path = std::path::PathBuf::from(&cfg.data_dir).join("zumbra-data.sqlite");
     if db_path.exists() {
         return Err(anyhow::anyhow!(
             "Wallet already exists in {}. Use `wallet delete --confirm` first.",
@@ -203,7 +203,7 @@ pub async fn cmd_wallet_restore(cfg: &Config, seed: &str, birthday: u32) -> Resu
 
     eprintln!("Restoring wallet from seed (birthday={})...", birthday);
 
-    zipher_engine::wallet::restore(
+    zumbra_engine::wallet::restore(
         &cfg.data_dir,
         &cfg.server_url,
         cfg.network,
@@ -214,7 +214,7 @@ pub async fn cmd_wallet_restore(cfg: &Config, seed: &str, birthday: u32) -> Resu
     )
     .await?;
 
-    let addresses = zipher_engine::query::get_addresses()
+    let addresses = zumbra_engine::query::get_addresses()
         .await
         .unwrap_or_default();
     let address = addresses
@@ -222,7 +222,7 @@ pub async fn cmd_wallet_restore(cfg: &Config, seed: &str, birthday: u32) -> Resu
         .map(|a| a.address.clone())
         .unwrap_or_default();
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
 
     // Store seed in a local file for send confirm (OWS not used for restore)
     let seed_path = std::path::PathBuf::from(&cfg.data_dir).join(".seed");
@@ -243,7 +243,7 @@ pub async fn cmd_wallet_delete(cfg: &Config, confirm: bool) -> Result<()> {
         ));
     }
 
-    zipher_engine::wallet::delete(&cfg.data_dir)?;
+    zumbra_engine::wallet::delete(&cfg.data_dir)?;
 
     print_ok("deleted", cfg.human, |_| {
         println!("Wallet data deleted from {}", cfg.data_dir);
@@ -253,7 +253,7 @@ pub async fn cmd_wallet_delete(cfg: &Config, confirm: bool) -> Result<()> {
 
 pub async fn cmd_sync_start(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
-    zipher_engine::sync::start().await?;
+    zumbra_engine::sync::start().await?;
 
     let cancel = Arc::new(AtomicBool::new(false));
     let cancel_clone = cancel.clone();
@@ -269,7 +269,7 @@ pub async fn cmd_sync_start(cfg: &Config) -> Result<()> {
     loop {
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-        let p = zipher_engine::sync::get_progress().await;
+        let p = zumbra_engine::sync::get_progress().await;
 
         if cfg.human {
             if let Some(ref err) = p.connection_error {
@@ -289,7 +289,7 @@ pub async fn cmd_sync_start(cfg: &Config) -> Result<()> {
         }
 
         if cancel.load(Ordering::SeqCst) {
-            zipher_engine::sync::stop().await;
+            zumbra_engine::sync::stop().await;
             if cfg.human {
                 eprintln!("\nSync stopped by user.");
             }
@@ -303,7 +303,7 @@ pub async fn cmd_sync_start(cfg: &Config) -> Result<()> {
             break;
         }
 
-        if !p.is_syncing && !zipher_engine::sync::is_running() {
+        if !p.is_syncing && !zumbra_engine::sync::is_running() {
             if cfg.human {
                 eprintln!("\nSync finished.");
             }
@@ -311,20 +311,20 @@ pub async fn cmd_sync_start(cfg: &Config) -> Result<()> {
         }
     }
 
-    let final_progress = zipher_engine::sync::get_progress().await;
+    let final_progress = zumbra_engine::sync::get_progress().await;
     if !cfg.human {
         print_ok(final_progress, false, |_| {});
     }
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_sync_status(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
 
-    let synced = zipher_engine::query::get_synced_height().await?;
-    let birthday = zipher_engine::query::get_birthday().await?;
+    let synced = zumbra_engine::query::get_synced_height().await?;
+    let birthday = zumbra_engine::query::get_birthday().await?;
 
     #[derive(Serialize)]
     struct SyncStatus {
@@ -342,13 +342,13 @@ pub async fn cmd_sync_status(cfg: &Config) -> Result<()> {
         println!("Birthday:      {}", s.birthday);
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_balance(cfg: &Config) -> Result<()> {
     sync_if_needed(cfg).await?;
-    let balance = zipher_engine::query::get_wallet_balance().await?;
+    let balance = zumbra_engine::query::get_wallet_balance().await?;
 
     print_ok(&balance, cfg.human, |b| {
         let total = b.sapling + b.orchard + b.transparent;
@@ -365,13 +365,13 @@ pub async fn cmd_balance(cfg: &Config) -> Result<()> {
         }
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_address(cfg: &Config) -> Result<()> {
     sync_if_needed(cfg).await?;
-    let addresses = zipher_engine::query::get_addresses().await?;
+    let addresses = zumbra_engine::query::get_addresses().await?;
 
     print_ok(&addresses, cfg.human, |addrs| {
         if addrs.is_empty() {
@@ -396,15 +396,15 @@ pub async fn cmd_address(cfg: &Config) -> Result<()> {
         }
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_keys(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
 
-    let ufvk = zipher_engine::query::export_ufvk().await?;
-    let uivk = zipher_engine::query::export_uivk().await?;
+    let ufvk = zumbra_engine::query::export_ufvk().await?;
+    let uivk = zumbra_engine::query::export_uivk().await?;
 
     #[derive(Serialize)]
     struct KeysData {
@@ -434,13 +434,13 @@ pub async fn cmd_keys(cfg: &Config) -> Result<()> {
         }
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_transactions(cfg: &Config, limit: usize) -> Result<()> {
     auto_open(cfg).await?;
-    let mut txs = zipher_engine::query::get_transactions().await?;
+    let mut txs = zumbra_engine::query::get_transactions().await?;
     txs.truncate(limit);
 
     print_ok(&txs, cfg.human, |txs| {
@@ -465,7 +465,7 @@ pub async fn cmd_transactions(cfg: &Config, limit: usize) -> Result<()> {
         }
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -479,17 +479,17 @@ pub async fn cmd_send_propose(
     priority: bool,
 ) -> Result<()> {
     sync_if_needed(cfg).await?;
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
 
     // For max sends, we don't know the amount until the engine produces the proposal,
     // so we skip the policy daily-limit check here. (The rate-limit check still runs
     // in cmd_send_confirm.)
     if !is_max {
-        let daily_spent = zipher_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
+        let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
         if let Err(violation) =
-            zipher_engine::policy::check_proposal(&policy, &to, amount, &context_id, daily_spent)
+            zumbra_engine::policy::check_proposal(&policy, &to, amount, &context_id, daily_spent)
         {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "propose_send",
                 Some(&to),
@@ -507,7 +507,7 @@ pub async fn cmd_send_propose(
     auto_open(cfg).await?;
 
     let (send_amount, fee, _) =
-        zipher_engine::send::propose_send(&to, amount, memo.clone(), is_max, priority).await?;
+        zumbra_engine::send::propose_send(&to, amount, memo.clone(), is_max, priority).await?;
 
     let pending = PendingProposal {
         address: to.clone(),
@@ -518,7 +518,7 @@ pub async fn cmd_send_propose(
     };
     save_pending(&cfg.data_dir, &pending)?;
 
-    zipher_engine::audit::log_event(
+    zumbra_engine::audit::log_event(
         &cfg.data_dir,
         "propose_send",
         Some(&to),
@@ -559,10 +559,10 @@ pub async fn cmd_send_propose(
         println!("  Fee:    {:.8} ZEC ({} zat)", s.fee_zec, s.fee);
         println!("  Total:  {} zat", s.total);
         println!();
-        println!("Run `zipher-cli send confirm` to sign and broadcast.");
+        println!("Run `zumbra send confirm` to sign and broadcast.");
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -571,9 +571,9 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
     sync_if_needed(cfg).await?;
     let pending = load_pending(&cfg.data_dir)?;
 
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
-    if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-        zipher_engine::audit::log_event(
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "confirm_send",
             Some(&pending.address),
@@ -589,7 +589,7 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
 
     auto_open(cfg).await?;
 
-    let (send_amount, fee, _) = zipher_engine::send::propose_send(
+    let (send_amount, fee, _) = zumbra_engine::send::propose_send(
         &pending.address,
         pending.amount,
         pending.memo.clone(),
@@ -608,10 +608,10 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
     }
 
     let seed = read_seed(&cfg.data_dir)?;
-    let txid = match zipher_engine::send::confirm_send(&seed).await {
+    let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
-            zipher_engine::policy::record_confirm();
-            zipher_engine::audit::log_event(
+            zumbra_engine::policy::record_confirm();
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "confirm_send",
                 Some(&pending.address),
@@ -625,7 +625,7 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
             txid
         }
         Err(e) => {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "confirm_send",
                 Some(&pending.address),
@@ -664,13 +664,13 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
         },
     );
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_send_max(cfg: &Config, to: String) -> Result<()> {
     auto_open(cfg).await?;
-    let max = zipher_engine::send::get_max_sendable(&to).await?;
+    let max = zumbra_engine::send::get_max_sendable(&to).await?;
 
     #[derive(Serialize)]
     struct MaxSendable {
@@ -694,7 +694,7 @@ pub async fn cmd_send_max(cfg: &Config, to: String) -> Result<()> {
         },
     );
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -703,7 +703,7 @@ pub async fn cmd_shield(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
 
     let seed = read_seed(&cfg.data_dir)?;
-    let txid = zipher_engine::send::shield_funds(&seed).await?;
+    let txid = zumbra_engine::send::shield_funds(&seed).await?;
 
     #[derive(Serialize)]
     struct ShieldResult {
@@ -715,7 +715,7 @@ pub async fn cmd_shield(cfg: &Config) -> Result<()> {
         println!("  txid: {}", r.txid);
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -724,7 +724,7 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
     force_sync(cfg).await?;
     auto_open(cfg).await?;
 
-    let addresses = zipher_engine::query::get_addresses().await?;
+    let addresses = zumbra_engine::query::get_addresses().await?;
     let own_addr = addresses
         .first()
         .map(|a| a.address.clone())
@@ -739,7 +739,7 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
         );
     }
 
-    let (send_amount, fee, _) = zipher_engine::send::propose_send(&own_addr, 0, None, true, false).await?;
+    let (send_amount, fee, _) = zumbra_engine::send::propose_send(&own_addr, 0, None, true, false).await?;
 
     if cfg.human {
         eprintln!(
@@ -750,7 +750,7 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
     }
 
     let seed = read_seed(&cfg.data_dir)?;
-    let txid = zipher_engine::send::confirm_send(&seed).await?;
+    let txid = zumbra_engine::send::confirm_send(&seed).await?;
 
     #[derive(Serialize)]
     struct ConsolidateResult {
@@ -774,7 +774,7 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
         },
     );
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -791,7 +791,7 @@ pub async fn cmd_store_signed_pczt(cfg: &Config, pczt_hex: String) -> Result<()>
         );
     }
 
-    let txid = zipher_engine::send::store_signed_pczt(&pczt_bytes).await?;
+    let txid = zumbra_engine::send::store_signed_pczt(&pczt_bytes).await?;
 
     #[derive(Serialize)]
     struct StorePcztResult {
@@ -803,7 +803,7 @@ pub async fn cmd_store_signed_pczt(cfg: &Config, pczt_hex: String) -> Result<()>
         println!("Notes marked as spent — safe to create new PCZTs.");
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -815,7 +815,7 @@ pub async fn cmd_ironwood_plan(cfg: &Config) -> Result<()> {
     sync_if_needed(cfg).await?;
     let result = async {
         let seed = read_seed(&cfg.data_dir)?;
-        let plan = zipher_engine::ironwood_v2::plan(&seed).await?;
+        let plan = zumbra_engine::ironwood_v2::plan(&seed).await?;
         print_ok(&plan, cfg.human, |p| {
             println!("Ironwood SDK transfer plan");
             println!("Amount: {} zat", p.total_migrating_zat);
@@ -825,14 +825,14 @@ pub async fn cmd_ironwood_plan(cfg: &Config) -> Result<()> {
         });
         Ok(())
     }.await;
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     result
 }
 
 pub async fn cmd_ironwood_status(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
-    let result = zipher_engine::ironwood_v2::status().await;
-    zipher_engine::wallet::close().await;
+    let result = zumbra_engine::ironwood_v2::status().await;
+    zumbra_engine::wallet::close().await;
     let report = result?;
     print_ok(&report, cfg.human, |r| {
         println!("Ironwood SDK transfer: {}", r.status);

@@ -128,7 +128,7 @@ pub fn read_seed(data_dir: &str) -> Result<SecretString> {
     }
 
     Err(anyhow::anyhow!(
-        "No OWS mnemonic wallet available. Run `zipher-cli wallet init`, \
+        "No OWS mnemonic wallet available. Run `zumbra wallet init`, \
          or set OWS_WALLET / OWS_PASSPHRASE to an existing OWS mnemonic wallet."
     ))
 }
@@ -161,7 +161,7 @@ pub fn load_pending(data_dir: &str) -> Result<PendingProposal> {
     let path = pending_path(data_dir);
     if !path.exists() {
         return Err(anyhow::anyhow!(
-            "No pending proposal. Run `zipher-cli send propose` first."
+            "No pending proposal. Run `zumbra send propose` first."
         ));
     }
     let json = std::fs::read_to_string(&path)?;
@@ -172,7 +172,7 @@ pub fn load_pending(data_dir: &str) -> Result<PendingProposal> {
 pub fn delete_pending(data_dir: &str) {
     let path = pending_path(data_dir);
     std::fs::remove_file(path).ok();
-    zipher_engine::send::clear_pczt_lock(data_dir);
+    zumbra_engine::send::clear_pczt_lock(data_dir);
 }
 
 // ---------------------------------------------------------------------------
@@ -180,14 +180,14 @@ pub fn delete_pending(data_dir: &str) {
 // ---------------------------------------------------------------------------
 
 pub async fn auto_open(cfg: &Config) -> Result<()> {
-    let db_path = PathBuf::from(&cfg.data_dir).join("zipher-data.sqlite");
+    let db_path = PathBuf::from(&cfg.data_dir).join("zumbra-data.sqlite");
     if !db_path.exists() {
         return Err(anyhow::anyhow!(
-            "No wallet found in {}. Run `zipher-cli wallet init` first.",
+            "No wallet found in {}. Run `zumbra wallet init` first.",
             cfg.data_dir
         ));
     }
-    zipher_engine::wallet::open(&cfg.data_dir, &cfg.server_url, cfg.network, None).await
+    zumbra_engine::wallet::open(&cfg.data_dir, &cfg.server_url, cfg.network, None).await
 }
 
 // ---------------------------------------------------------------------------
@@ -197,8 +197,8 @@ pub async fn auto_open(cfg: &Config) -> Result<()> {
 pub async fn force_sync(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
 
-    let synced = zipher_engine::query::get_synced_height().await.unwrap_or(0);
-    let latest = zipher_engine::wallet::fetch_latest_height(&cfg.server_url)
+    let synced = zumbra_engine::query::get_synced_height().await.unwrap_or(0);
+    let latest = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url)
         .await
         .unwrap_or(synced as u64) as u32;
 
@@ -209,24 +209,24 @@ pub async fn force_sync(cfg: &Config) -> Result<()> {
     }
 
     eprintln!("Syncing wallet ({} blocks behind)...", blocks_behind);
-    zipher_engine::sync::start().await?;
+    zumbra_engine::sync::start().await?;
 
     loop {
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        let p = zipher_engine::sync::get_progress().await;
+        let p = zumbra_engine::sync::get_progress().await;
 
         if p.synced_height > 0 && p.synced_height >= p.latest_height {
             eprintln!("Synced to {}.", p.synced_height);
             break;
         }
-        if !p.is_syncing && !zipher_engine::sync::is_running() {
+        if !p.is_syncing && !zumbra_engine::sync::is_running() {
             eprintln!("Sync finished at {}.", p.synced_height);
             break;
         }
     }
 
-    zipher_engine::sync::stop().await;
-    zipher_engine::wallet::close().await;
+    zumbra_engine::sync::stop().await;
+    zumbra_engine::wallet::close().await;
     auto_open(cfg).await?;
     Ok(())
 }
@@ -236,15 +236,15 @@ const STALE_BLOCK_THRESHOLD: u32 = 10;
 pub async fn sync_if_needed(cfg: &Config) -> Result<()> {
     auto_open(cfg).await?;
 
-    let synced = zipher_engine::query::get_synced_height().await.unwrap_or(0);
-    let latest = zipher_engine::wallet::fetch_latest_height(&cfg.server_url)
+    let synced = zumbra_engine::query::get_synced_height().await.unwrap_or(0);
+    let latest = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url)
         .await
         .unwrap_or(synced as u64) as u32;
 
     let blocks_behind = if latest > synced { latest - synced } else { 0 };
 
     let has_unconfirmed = if blocks_behind <= STALE_BLOCK_THRESHOLD {
-        let bal = zipher_engine::query::get_wallet_balance().await.ok();
+        let bal = zumbra_engine::query::get_wallet_balance().await.ok();
         bal.map(|b| {
             b.unconfirmed_sapling > 0
                 || b.unconfirmed_orchard > 0
@@ -265,7 +265,7 @@ pub async fn sync_if_needed(cfg: &Config) -> Result<()> {
         // Wallet DB is already at (or near) the chain tip, but the in-memory
         // `SYNC_PROGRESS` hasn't been populated this process. Seed it so that
         // `ensure_synced` (used by spend paths) doesn't fail with "synced: 0".
-        zipher_engine::sync::set_progress(synced, latest).await;
+        zumbra_engine::sync::set_progress(synced, latest).await;
     }
 
     if needs_sync {
@@ -278,24 +278,24 @@ pub async fn sync_if_needed(cfg: &Config) -> Result<()> {
             );
         }
 
-        zipher_engine::sync::start().await?;
+        zumbra_engine::sync::start().await?;
 
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            let p = zipher_engine::sync::get_progress().await;
+            let p = zumbra_engine::sync::get_progress().await;
 
             if p.synced_height > 0 && p.synced_height >= p.latest_height {
                 eprintln!("Synced to {}.", p.synced_height);
                 break;
             }
-            if !p.is_syncing && !zipher_engine::sync::is_running() {
+            if !p.is_syncing && !zumbra_engine::sync::is_running() {
                 eprintln!("Sync finished at {}.", p.synced_height);
                 break;
             }
         }
 
-        zipher_engine::sync::stop().await;
-        zipher_engine::wallet::close().await;
+        zumbra_engine::sync::stop().await;
+        zumbra_engine::wallet::close().await;
         auto_open(cfg).await?;
     }
 

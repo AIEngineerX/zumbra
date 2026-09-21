@@ -1,4 +1,4 @@
-//! CLI handler for `zipher-cli evm-swap`.
+//! CLI handler for `zumbra evm-swap`.
 //!
 //! Interactive flow: chain → balances → source token → dest token → amount → quote → confirm → execute.
 //! Verbose step-by-step output for debugging swap issues.
@@ -8,8 +8,8 @@ use std::io::{self, Write as _};
 use anyhow::Result;
 use secrecy::{ExposeSecret, SecretString};
 
-use zipher_engine::evm::{self, ChainConfig, PARASWAP_NATIVE};
-use zipher_engine::evm_swap;
+use zumbra_engine::evm::{self, ChainConfig, PARASWAP_NATIVE};
+use zumbra_engine::evm_swap;
 
 use crate::market::get_ows_evm_address;
 use crate::Config;
@@ -243,7 +243,7 @@ pub async fn cmd_evm_swap(
 
     // ── Step 10: Sign and broadcast ──────────────────────────────────────
     eprintln!("[6/7] Signing and broadcasting...");
-    let signed = zipher_engine::ows::sign_evm_tx(seed.expose_secret(), &unsigned)?;
+    let signed = zumbra_engine::ows::sign_evm_tx(seed.expose_secret(), &unsigned)?;
     eprintln!(
         "      signed hex ({} bytes): 0x{}...{}",
         signed.len(),

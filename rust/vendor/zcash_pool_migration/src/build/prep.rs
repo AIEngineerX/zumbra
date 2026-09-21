@@ -187,7 +187,7 @@ where
     }
 
     let build_result = builder
-        .build_for_pczt(zipher_rng_compat::From06(rng), &Zip317FeeRule::standard())
+        .build_for_pczt(zumbra_rng_compat::From06(rng), &Zip317FeeRule::standard())
         .map_err(|e| BuildError::Build(format!("preparation: build: {e}")))?;
 
     // Un-shuffle and RECOVER: map each requested output to its real action index (the fabricated

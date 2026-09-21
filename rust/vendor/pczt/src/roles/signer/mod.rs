@@ -17,7 +17,7 @@ use alloc::vec::Vec;
 
 use blake2b_simd::Hash as Blake2bHash;
 use orchard::primitives::redpallas;
-use zipher_rng_compat::OS_RNG as OsRng;
+use zumbra_rng_compat::OS_RNG as OsRng;
 
 use ::transparent::sighash::{SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use zcash_primitives::transaction::{

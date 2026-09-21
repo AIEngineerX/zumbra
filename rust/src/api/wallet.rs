@@ -91,8 +91,8 @@ pub enum ChainType {
 // From impls: convert engine types → FRB-annotated types
 // ---------------------------------------------------------------------------
 
-impl From<zipher_engine::types::WalletBalance> for WalletBalance {
-    fn from(b: zipher_engine::types::WalletBalance) -> Self {
+impl From<zumbra_engine::types::WalletBalance> for WalletBalance {
+    fn from(b: zumbra_engine::types::WalletBalance) -> Self {
         Self {
             transparent: b.transparent,
             sapling: b.sapling,
@@ -110,8 +110,8 @@ impl From<zipher_engine::types::WalletBalance> for WalletBalance {
     }
 }
 
-impl From<zipher_engine::types::AddressInfo> for AddressInfo {
-    fn from(a: zipher_engine::types::AddressInfo) -> Self {
+impl From<zumbra_engine::types::AddressInfo> for AddressInfo {
+    fn from(a: zumbra_engine::types::AddressInfo) -> Self {
         Self {
             address: a.address,
             has_transparent: a.has_transparent,

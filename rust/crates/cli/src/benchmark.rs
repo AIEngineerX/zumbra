@@ -27,7 +27,7 @@ struct SyncBenchmarkResult {
     prefetch_depth: usize,
     multi_server: bool,
     alternate_servers: Vec<String>,
-    perf: zipher_engine::sync::SyncPerfSnapshot,
+    perf: zumbra_engine::sync::SyncPerfSnapshot,
 }
 
 #[derive(Debug, Serialize)]
@@ -46,22 +46,22 @@ pub async fn cmd_sync_benchmark(
     auto_open(cfg).await?;
 
     let alternate_servers = if multi_server {
-        zipher_engine::sync::known_lightwalletd_servers(&cfg.network)
+        zumbra_engine::sync::known_lightwalletd_servers(&cfg.network)
             .into_iter()
             .filter(|server| server != &cfg.server_url)
             .collect::<Vec<_>>()
     } else {
         Vec::new()
     };
-    zipher_engine::sync::configure_runtime(zipher_engine::sync::SyncRuntimeConfig {
+    zumbra_engine::sync::configure_runtime(zumbra_engine::sync::SyncRuntimeConfig {
         prefetch_depth,
         alternate_servers: alternate_servers.clone(),
         auto_select_servers: false,
     })
     .await;
 
-    let started_synced_height = zipher_engine::query::get_synced_height().await.unwrap_or(0);
-    let started_latest_height = zipher_engine::wallet::fetch_latest_height(&cfg.server_url)
+    let started_synced_height = zumbra_engine::query::get_synced_height().await.unwrap_or(0);
+    let started_latest_height = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url)
         .await
         .unwrap_or(started_synced_height as u64) as u32;
 
@@ -84,15 +84,15 @@ pub async fn cmd_sync_benchmark(
     let mut samples = 0usize;
     let mut timed_out = false;
 
-    if let Err(error) = zipher_engine::sync::start().await {
-        zipher_engine::sync::reset_runtime_config().await;
-        zipher_engine::wallet::close().await;
+    if let Err(error) = zumbra_engine::sync::start().await {
+        zumbra_engine::sync::reset_runtime_config().await;
+        zumbra_engine::wallet::close().await;
         return Err(error);
     }
 
     loop {
         tokio::time::sleep(poll_interval).await;
-        let progress = zipher_engine::sync::get_progress().await;
+        let progress = zumbra_engine::sync::get_progress().await;
         samples += 1;
         record_phase(&mut phase_counts, &progress.phase);
 
@@ -122,17 +122,17 @@ pub async fn cmd_sync_benchmark(
             }
         }
 
-        if !progress.is_syncing && !zipher_engine::sync::is_running() {
+        if !progress.is_syncing && !zumbra_engine::sync::is_running() {
             break;
         }
     }
 
     // End timing before stop/close so shutdown latency is not scan throughput.
     let elapsed = started.elapsed();
-    let final_progress = zipher_engine::sync::get_progress().await;
-    let perf = zipher_engine::sync::get_perf_snapshot().await;
-    zipher_engine::sync::stop().await;
-    zipher_engine::sync::reset_runtime_config().await;
+    let final_progress = zumbra_engine::sync::get_progress().await;
+    let perf = zumbra_engine::sync::get_perf_snapshot().await;
+    zumbra_engine::sync::stop().await;
+    zumbra_engine::sync::reset_runtime_config().await;
     let final_synced_height = if final_progress.synced_height > 0 {
         final_progress.synced_height
     } else {
@@ -143,7 +143,7 @@ pub async fn cmd_sync_benchmark(
     } else {
         started_latest_height
     };
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
 
     let blocks_scanned = final_progress.blocks_scanned;
     let committed_blocks = final_synced_height.saturating_sub(started_synced_height);

@@ -1,5 +1,5 @@
 use orchard::{Bundle, bundle::Authorized, circuit::VerifyingKey};
-use zipher_rng_compat::OS_RNG as OsRng;
+use zumbra_rng_compat::OS_RNG as OsRng;
 use zcash_protocol::value::ZatBalance;
 
 pub(super) fn verify_bundle(

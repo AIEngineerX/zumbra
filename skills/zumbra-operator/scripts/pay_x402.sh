@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Pay an HTTP 402 paywall via zipher-cli x402 pay.
-# Requires ZIPHER_SEED to be set. Returns txid + PAYMENT-SIGNATURE header.
+# Pay an HTTP 402 paywall via zumbra x402 pay.
+# Requires ZUMBRA_SEED to be set. Returns txid + PAYMENT-SIGNATURE header.
 #
 # Usage:
 #   ./pay_x402.sh --body '<402 JSON>' [--context-id <ID>]
 #   echo '<402 JSON>' | ./pay_x402.sh --context-id <ID>
 
-if [ -z "${ZIPHER_SEED:-}" ]; then
-    echo '{"ok":false,"error":"ZIPHER_SEED is not set. Cannot sign transaction."}' >&2
+if [ -z "${ZUMBRA_SEED:-}" ]; then
+    echo '{"ok":false,"error":"ZUMBRA_SEED is not set. Cannot sign transaction."}' >&2
     exit 1
 fi
 
-RESULT=$(zipher-cli x402 pay "$@" 2>/dev/null)
+RESULT=$(zumbra x402 pay "$@" 2>/dev/null)
 
 OK=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok', False))" 2>/dev/null || echo "False")
 

@@ -3497,7 +3497,7 @@ mod tests {
     #[ignore = "manual Tor network verification; no keys, wallet data, or transaction submission"]
     async fn verify_live_tor_transport() {
         let dir = tempfile::tempdir().unwrap();
-        *ENGINE.lock().await = Some(crate::ZipherEngine {
+        *ENGINE.lock().await = Some(crate::ZumbraEngine {
             db_data_path: dir.path().join("unused.db"), params: Network::MainNetwork,
             server_url: "https://zec.rocks:443".into(), birthday: height(3_477_000),
             db_cipher_key: None, tor_required: false, tor_client: None,
@@ -3516,7 +3516,7 @@ mod tests {
 
     #[test]
     fn requested_tor_without_a_client_blocks_network_access() {
-        let mut engine = crate::ZipherEngine {
+        let mut engine = crate::ZumbraEngine {
             db_data_path: PathBuf::from("disposable.db"),
             params: Network::TestNetwork,
             server_url: "http://127.0.0.1:1".into(),
@@ -3728,7 +3728,7 @@ mod tests {
     #[tokio::test]
     async fn engine_rejects_overlapping_starts_and_restarts_after_stop() {
         let dir = tempfile::tempdir().unwrap();
-        *ENGINE.lock().await = Some(crate::ZipherEngine {
+        *ENGINE.lock().await = Some(crate::ZumbraEngine {
             db_data_path: dir.path().join("wallet.db"),
             params: Network::TestNetwork,
             server_url: "http://127.0.0.1:1".to_string(),
@@ -3759,7 +3759,7 @@ mod tests {
         let tip = super::super::wallet::fetch_latest_height(server)
             .await
             .unwrap() as u32;
-        let lookback = std::env::var("ZIPHER_SYNC_BENCH_BLOCKS")
+        let lookback = std::env::var("ZUMBRA_SYNC_BENCH_BLOCKS")
             .map(|value| value.parse::<u32>().expect("invalid benchmark block count"))
             .unwrap_or(2_000);
         assert!((1..=100_000).contains(&lookback));
@@ -3767,7 +3767,7 @@ mod tests {
         let entropy: [u8; 32] = rand::random();
         let mnemonic = bip0039::Mnemonic::<bip0039::English>::from_entropy(&entropy).unwrap();
 
-        let compare_peers = std::env::var_os("ZIPHER_SYNC_BENCH_PEERS").is_some();
+        let compare_peers = std::env::var_os("ZUMBRA_SYNC_BENCH_PEERS").is_some();
         let configurations: Vec<_> = if compare_peers {
             [false, true, true, false, false, true]
                 .into_iter()
@@ -3834,7 +3834,7 @@ mod tests {
                 progress.synced_height >= tip,
                 "wallet did not catch up to the initial tip"
             );
-            assert!(!dir.path().join("zipher-cache.sqlite").exists());
+            assert!(!dir.path().join("zumbra-cache.sqlite").exists());
         }
     }
 }

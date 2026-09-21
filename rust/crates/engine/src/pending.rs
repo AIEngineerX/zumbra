@@ -34,7 +34,7 @@ fn txid_display(txid: &[u8]) -> String {
 
 fn ensure_pending_table(conn: &rusqlite::Connection) -> Result<()> {
     conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS zipher_pending_txs (
+        "CREATE TABLE IF NOT EXISTS zumbra_pending_txs (
             txid BLOB PRIMARY KEY,
             txid_hex TEXT NOT NULL UNIQUE,
             raw_tx BLOB NOT NULL,
@@ -74,7 +74,7 @@ pub fn record_broadcast(
     let now = now_secs();
 
     conn.execute(
-        "INSERT OR REPLACE INTO zipher_pending_txs
+        "INSERT OR REPLACE INTO zumbra_pending_txs
             (txid, txid_hex, raw_tx, target_height, expiry_height, last_resubmit_at, created_at)
          VALUES (?, ?, ?, ?, ?, 0, ?)",
         rusqlite::params![
@@ -102,7 +102,7 @@ pub async fn resubmit_unmined(
         let mut stmt = conn.prepare(
             "SELECT p.txid, p.txid_hex, p.raw_tx, p.expiry_height, p.last_resubmit_at,
                     t.mined_height
-             FROM zipher_pending_txs p
+             FROM zumbra_pending_txs p
              LEFT JOIN transactions t ON t.txid = p.txid",
         )?;
         let rows = stmt.query_map([], |row| {
@@ -130,7 +130,7 @@ pub async fn resubmit_unmined(
         if mined_height.is_some() {
             let conn = open_cipher_conn(db_data_path, db_cipher_key)?;
             conn.execute(
-                "DELETE FROM zipher_pending_txs WHERE txid = ?",
+                "DELETE FROM zumbra_pending_txs WHERE txid = ?",
                 rusqlite::params![&txid],
             )?;
             summary.confirmed += 1;
@@ -141,7 +141,7 @@ pub async fn resubmit_unmined(
         if matches!(expiry_height, Some(expiry) if expiry > 0 && expiry < latest_height) {
             let conn = open_cipher_conn(db_data_path, db_cipher_key)?;
             conn.execute(
-                "DELETE FROM zipher_pending_txs WHERE txid = ?",
+                "DELETE FROM zumbra_pending_txs WHERE txid = ?",
                 rusqlite::params![&txid],
             )?;
             summary.expired += 1;
@@ -165,7 +165,7 @@ pub async fn resubmit_unmined(
         if resp.error_code == 0 {
             let conn = open_cipher_conn(db_data_path, db_cipher_key)?;
             conn.execute(
-                "UPDATE zipher_pending_txs SET last_resubmit_at = ? WHERE txid = ?",
+                "UPDATE zumbra_pending_txs SET last_resubmit_at = ? WHERE txid = ?",
                 rusqlite::params![now, &txid],
             )?;
             summary.resubmitted += 1;

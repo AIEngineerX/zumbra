@@ -63,14 +63,14 @@ pub async fn cmd_send_pczt(
     auto_open(cfg).await?;
 
     let (_send_amount, fee, _) =
-        zipher_engine::send::propose_send(&to, amount, memo, false, false).await?;
+        zumbra_engine::send::propose_send(&to, amount, memo, false, false).await?;
 
     if cfg.human {
         eprintln!("Creating unsigned Zcash transaction (PCZT)...");
         eprintln!("  Amount: {:.8} ZEC + {} zat fee", amount as f64 / 1e8, fee);
     }
 
-    let pczt_bytes = zipher_engine::send::create_pczt().await?;
+    let pczt_bytes = zumbra_engine::send::create_pczt().await?;
     let pczt_hex = hex::encode(&pczt_bytes);
 
     #[derive(Serialize)]
@@ -105,7 +105,7 @@ pub async fn cmd_send_pczt(
         },
     );
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -152,7 +152,7 @@ pub async fn cmd_polymarket_list(
     show_all: bool,
 ) -> Result<()> {
     let summary =
-        zipher_engine::polymarket::polymarket_discover(keyword.as_deref(), limit, show_all).await?;
+        zumbra_engine::polymarket::polymarket_discover(keyword.as_deref(), limit, show_all).await?;
 
     print_ok(&summary, cfg.human, |s| {
         println!();
@@ -208,7 +208,7 @@ pub async fn cmd_polymarket_list(
 
 pub async fn cmd_polymarket_show(cfg: &Config, condition_id: String) -> Result<()> {
     let m =
-        zipher_engine::polymarket::polymarket_gamma_get_market_by_condition(&condition_id).await?;
+        zumbra_engine::polymarket::polymarket_gamma_get_market_by_condition(&condition_id).await?;
 
     let labels = m.outcome_labels();
     let prices = m.outcome_prices_vec();
@@ -288,7 +288,7 @@ pub async fn cmd_polymarket_show(cfg: &Config, condition_id: String) -> Result<(
 
 /// Open positions for a Polygon wallet (Polymarket Data API — read-only).
 pub async fn cmd_polymarket_positions(cfg: &Config, user: String) -> Result<()> {
-    let positions = zipher_engine::polymarket::polymarket_get_positions(&user).await?;
+    let positions = zumbra_engine::polymarket::polymarket_get_positions(&user).await?;
     print_ok(positions, cfg.human, |rows| {
         println!();
         println!("=== Polymarket — Open positions (Data API) ===");
@@ -338,7 +338,7 @@ pub async fn cmd_polymarket_test_order(
     eprintln!();
 
     // 1. Derive Polygon address
-    let address = zipher_engine::polymarket::derive_address(seed)?;
+    let address = zumbra_engine::polymarket::derive_address(seed)?;
     eprintln!("[1] Address: {}", address);
 
     // 2. L1 auth — derive CLOB API credentials
@@ -346,7 +346,7 @@ pub async fn cmd_polymarket_test_order(
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
-    let (auth_addr, auth_sig) = zipher_engine::polymarket::sign_clob_auth(seed, ts, 0)?;
+    let (auth_addr, auth_sig) = zumbra_engine::polymarket::sign_clob_auth(seed, ts, 0)?;
     let ts_str = ts.to_string();
 
     let l1_headers = [
@@ -451,7 +451,7 @@ pub async fn cmd_polymarket_test_order(
     .to_string();
     let zero_bytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-    let order = zipher_engine::polymarket::PolymarketOrder {
+    let order = zumbra_engine::polymarket::PolymarketOrder {
         salt: salt.clone(),
         maker: address.clone(),
         signer: address.clone(),
@@ -467,7 +467,7 @@ pub async fn cmd_polymarket_test_order(
 
     eprintln!("   Order: {:?}", order);
 
-    let signature = zipher_engine::polymarket::sign_order(seed, &order, neg_risk)?;
+    let signature = zumbra_engine::polymarket::sign_order(seed, &order, neg_risk)?;
     eprintln!("   Signature: {}...", &signature[..signature.len().min(20)]);
     eprintln!();
 
@@ -597,20 +597,20 @@ pub async fn cmd_polymarket_full_bet(
 
     let seed_secret = read_seed(&cfg.data_dir)?;
     let seed = seed_secret.expose_secret().clone();
-    let address = zipher_engine::ows::derive_evm_address(&seed)?;
+    let address = zumbra_engine::ows::derive_evm_address(&seed)?;
     let exchange = if neg_risk {
-        zipher_engine::polymarket::NEG_RISK_CTF_EXCHANGE
+        zumbra_engine::polymarket::NEG_RISK_CTF_EXCHANGE
     } else {
-        zipher_engine::polymarket::CTF_EXCHANGE
+        zumbra_engine::polymarket::CTF_EXCHANGE
     };
 
     eprintln!("=== Polymarket Full Bet (on-chain) ===\n");
     eprintln!("[1] Address: {}", address);
 
     // -- Check balances --
-    let usdce_bal = zipher_engine::evm::get_erc20_balance(POLYGON_RPC, USDCE, &address).await?;
-    let pusd_bal = zipher_engine::evm::get_erc20_balance(POLYGON_RPC, PUSD, &address).await?;
-    let pol_bal = zipher_engine::evm::get_native_balance(POLYGON_RPC, &address).await?;
+    let usdce_bal = zumbra_engine::evm::get_erc20_balance(POLYGON_RPC, USDCE, &address).await?;
+    let pusd_bal = zumbra_engine::evm::get_erc20_balance(POLYGON_RPC, PUSD, &address).await?;
+    let pol_bal = zumbra_engine::evm::get_native_balance(POLYGON_RPC, &address).await?;
     eprintln!("[2] Balances:");
     eprintln!("    USDC.e:  {:.6}", usdce_bal as f64 / 1e6);
     eprintln!("    pUSD:    {:.6}", pusd_bal as f64 / 1e6);
@@ -628,8 +628,8 @@ pub async fn cmd_polymarket_full_bet(
     // -- Only wrap if we don't already have enough pUSD --
     if pusd_bal < amount_micro {
         eprintln!("\n[3] Approving USDC.e → CollateralOnramp...");
-        let fees = zipher_engine::evm::suggest_eip1559_fees(POLYGON_RPC, 137).await?;
-        let approve_hash = zipher_engine::evm::approve_erc20(
+        let fees = zumbra_engine::evm::suggest_eip1559_fees(POLYGON_RPC, 137).await?;
+        let approve_hash = zumbra_engine::evm::approve_erc20(
             POLYGON_RPC,
             &seed,
             &address,
@@ -640,7 +640,7 @@ pub async fn cmd_polymarket_full_bet(
             &fees,
         )
         .await?;
-        let r = zipher_engine::evm::wait_for_receipt(POLYGON_RPC, &approve_hash, 60).await?;
+        let r = zumbra_engine::evm::wait_for_receipt(POLYGON_RPC, &approve_hash, 60).await?;
         eprintln!(
             "    tx: {} (status: {}, gas: {})",
             approve_hash,
@@ -668,9 +668,9 @@ pub async fn cmd_polymarket_full_bet(
         calldata.extend_from_slice(&[0u8; 16]); // pad to 32
         calldata.extend_from_slice(&amount_bytes);
 
-        let nonce = zipher_engine::evm::get_nonce(POLYGON_RPC, &address).await?;
-        let fees = zipher_engine::evm::suggest_eip1559_fees(POLYGON_RPC, 137).await?;
-        let unsigned = zipher_engine::evm::build_unsigned_eip1559_tx(
+        let nonce = zumbra_engine::evm::get_nonce(POLYGON_RPC, &address).await?;
+        let fees = zumbra_engine::evm::suggest_eip1559_fees(POLYGON_RPC, 137).await?;
+        let unsigned = zumbra_engine::evm::build_unsigned_eip1559_tx(
             137,
             nonce,
             fees.max_priority_fee_per_gas,
@@ -681,9 +681,9 @@ pub async fn cmd_polymarket_full_bet(
             &calldata,
         );
         let wrap_hash =
-            zipher_engine::evm::sign_and_broadcast(&seed, &unsigned, POLYGON_RPC).await?;
+            zumbra_engine::evm::sign_and_broadcast(&seed, &unsigned, POLYGON_RPC).await?;
         eprintln!("    tx: {}", wrap_hash);
-        let r = zipher_engine::evm::wait_for_receipt(POLYGON_RPC, &wrap_hash, 60).await?;
+        let r = zumbra_engine::evm::wait_for_receipt(POLYGON_RPC, &wrap_hash, 60).await?;
         eprintln!(
             "    status: {}, gas: {}",
             if r.status { "OK" } else { "REVERTED" },
@@ -694,7 +694,7 @@ pub async fn cmd_polymarket_full_bet(
         }
 
         // Verify pUSD balance
-        let new_pusd = zipher_engine::evm::get_erc20_balance(POLYGON_RPC, PUSD, &address).await?;
+        let new_pusd = zumbra_engine::evm::get_erc20_balance(POLYGON_RPC, PUSD, &address).await?;
         eprintln!("    pUSD balance after wrap: {:.6}", new_pusd as f64 / 1e6);
     } else {
         eprintln!("\n[3-4] Already have enough pUSD, skipping wrap.");
@@ -707,8 +707,8 @@ pub async fn cmd_polymarket_full_bet(
         approve_micro as f64 / 1e6,
         &exchange[..10]
     );
-    let fees2 = zipher_engine::evm::suggest_eip1559_fees(POLYGON_RPC, 137).await?;
-    let approve_hash = zipher_engine::evm::approve_erc20(
+    let fees2 = zumbra_engine::evm::suggest_eip1559_fees(POLYGON_RPC, 137).await?;
+    let approve_hash = zumbra_engine::evm::approve_erc20(
         POLYGON_RPC,
         &seed,
         &address,
@@ -719,7 +719,7 @@ pub async fn cmd_polymarket_full_bet(
         &fees2,
     )
     .await?;
-    let r = zipher_engine::evm::wait_for_receipt(POLYGON_RPC, &approve_hash, 60).await?;
+    let r = zumbra_engine::evm::wait_for_receipt(POLYGON_RPC, &approve_hash, 60).await?;
     eprintln!(
         "    tx: {} (status: {}, gas: {})",
         approve_hash,
@@ -736,7 +736,7 @@ pub async fn cmd_polymarket_full_bet(
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
-    let (auth_addr, auth_sig) = zipher_engine::polymarket::sign_clob_auth(&seed, ts, 0)?;
+    let (auth_addr, auth_sig) = zumbra_engine::polymarket::sign_clob_auth(&seed, ts, 0)?;
     let ts_str = ts.to_string();
     let l1_headers = [
         ("POLY_ADDRESS", auth_addr.as_str()),
@@ -837,7 +837,7 @@ pub async fn cmd_polymarket_full_bet(
         .to_string();
     let zero_bytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-    let order = zipher_engine::polymarket::PolymarketOrder {
+    let order = zumbra_engine::polymarket::PolymarketOrder {
         salt: salt.clone(),
         maker: address.clone(),
         signer: address.clone(),
@@ -850,7 +850,7 @@ pub async fn cmd_polymarket_full_bet(
         metadata: zero_bytes32.to_string(),
         builder: zero_bytes32.to_string(),
     };
-    let signature = zipher_engine::polymarket::sign_order(&seed, &order, neg_risk)?;
+    let signature = zumbra_engine::polymarket::sign_order(&seed, &order, neg_risk)?;
 
     // -- Post order --
     eprintln!("[8] Posting order...");

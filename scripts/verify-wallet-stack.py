@@ -23,7 +23,7 @@ for package in packages:
 for name, version in {
     "zcash_client_backend": "0.24.0", "zcash_client_sqlite": "0.22.0",
     "zcash_pool_migration": "0.1.0", "pczt": "0.9.3", "zcash_protocol": "0.10.6",
-    "zipher-cli": "0.3.0", "zipher-mcp-server": "0.3.0",
+    "zumbra": "0.3.0", "zumbra-mcp": "0.3.0",
 }.items():
     matches = [p for p in packages if p["name"] == name]
     if len(matches) != 1 or matches[0]["version"] != version:

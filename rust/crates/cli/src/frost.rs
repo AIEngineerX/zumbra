@@ -19,9 +19,9 @@ fn pkg(id: u16, package: &str) -> (u16, String) {
 pub async fn cmd_frost_self_test(cfg: &Config) -> Result<()> {
     let (c1, c2, _) = local_2_of_3_dkg()?;
 
-    let s1 = zipher_engine::frost::frost_sign_round1(c1.key_package.clone())?;
-    let s2 = zipher_engine::frost::frost_sign_round1(c2.key_package.clone())?;
-    let signing_package = zipher_engine::frost::frost_create_signing_package(
+    let s1 = zumbra_engine::frost::frost_sign_round1(c1.key_package.clone())?;
+    let s2 = zumbra_engine::frost::frost_sign_round1(c2.key_package.clone())?;
+    let signing_package = zumbra_engine::frost::frost_create_signing_package(
         "ab".repeat(32),
         BTreeMap::from([
             (1, s1.signing_commitments.clone()),
@@ -29,21 +29,21 @@ pub async fn cmd_frost_self_test(cfg: &Config) -> Result<()> {
         ]),
     )?;
     let randomizer =
-        zipher_engine::frost::frost_create_randomizer(c1.public_key_package.clone())?;
+        zumbra_engine::frost::frost_create_randomizer(c1.public_key_package.clone())?;
 
-    let share1 = zipher_engine::frost::frost_sign_round2(
+    let share1 = zumbra_engine::frost::frost_sign_round2(
         signing_package.clone(),
         s1.signing_nonces,
         c1.key_package,
         randomizer.randomizer_hex.clone(),
     )?;
-    let share2 = zipher_engine::frost::frost_sign_round2(
+    let share2 = zumbra_engine::frost::frost_sign_round2(
         signing_package.clone(),
         s2.signing_nonces,
         c2.key_package,
         randomizer.randomizer_hex.clone(),
     )?;
-    let sig = zipher_engine::frost::frost_aggregate(
+    let sig = zumbra_engine::frost::frost_aggregate(
         signing_package,
         BTreeMap::from([(1, share1), (2, share2)]),
         c1.public_key_package,
@@ -74,14 +74,14 @@ struct FrostRelaySmokeResult {
 }
 
 pub async fn cmd_frost_relay_smoke(cfg: &Config, relay: String) -> Result<()> {
-    let id1 = zipher_engine::frost::frost_relay_generate_identity()?;
-    let id2 = zipher_engine::frost::frost_relay_generate_identity()?;
+    let id1 = zumbra_engine::frost::frost_relay_generate_identity()?;
+    let id2 = zumbra_engine::frost::frost_relay_generate_identity()?;
 
     let client = reqwest::Client::new();
     async fn login(
         client: &reqwest::Client,
         relay: &str,
-        id: &zipher_engine::frost::FrostRelayIdentity,
+        id: &zumbra_engine::frost::FrostRelayIdentity,
     ) -> Result<String> {
         let challenge: serde_json::Value = client
             .post(format!("{relay}/challenge"))
@@ -94,7 +94,7 @@ pub async fn cmd_frost_relay_smoke(cfg: &Config, relay: String) -> Result<()> {
             .as_str()
             .ok_or_else(|| anyhow::anyhow!("missing challenge"))?
             .to_string();
-        let proof = zipher_engine::frost::frost_relay_sign_challenge(
+        let proof = zumbra_engine::frost::frost_relay_sign_challenge(
             id.private_key_hex.clone(),
             id.public_key_hex.clone(),
             challenge.clone(),
@@ -140,7 +140,7 @@ pub async fn cmd_frost_relay_smoke(cfg: &Config, relay: String) -> Result<()> {
         .to_string();
 
     let msg = "68656c6c6f"; // hello
-    let encrypted = zipher_engine::frost::frost_relay_encrypt(
+    let encrypted = zumbra_engine::frost::frost_relay_encrypt(
         id1.private_key_hex.clone(),
         id2.public_key_hex.clone(),
         msg.to_string(),
@@ -177,7 +177,7 @@ pub async fn cmd_frost_relay_smoke(cfg: &Config, relay: String) -> Result<()> {
     let encrypted = first["msg"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("missing msg"))?;
-    let decrypted = zipher_engine::frost::frost_relay_decrypt(
+    let decrypted = zumbra_engine::frost::frost_relay_decrypt(
         id2.private_key_hex.clone(),
         sender.to_string(),
         encrypted.to_string(),
@@ -203,29 +203,29 @@ pub async fn cmd_frost_relay_smoke(cfg: &Config, relay: String) -> Result<()> {
 }
 
 fn local_2_of_3_dkg() -> Result<(
-    zipher_engine::frost::FrostDkgCompleteResult,
-    zipher_engine::frost::FrostDkgCompleteResult,
-    zipher_engine::frost::FrostDkgCompleteResult,
+    zumbra_engine::frost::FrostDkgCompleteResult,
+    zumbra_engine::frost::FrostDkgCompleteResult,
+    zumbra_engine::frost::FrostDkgCompleteResult,
 )> {
-    let p1 = zipher_engine::frost::frost_dkg_init(1, 3, 2)?;
-    let p2 = zipher_engine::frost::frost_dkg_init(2, 3, 2)?;
-    let p3 = zipher_engine::frost::frost_dkg_init(3, 3, 2)?;
+    let p1 = zumbra_engine::frost::frost_dkg_init(1, 3, 2)?;
+    let p2 = zumbra_engine::frost::frost_dkg_init(2, 3, 2)?;
+    let p3 = zumbra_engine::frost::frost_dkg_init(3, 3, 2)?;
 
-    let r2_1 = zipher_engine::frost::frost_dkg_round2(
+    let r2_1 = zumbra_engine::frost::frost_dkg_round2(
         p1.secret_package,
         BTreeMap::from([
             pkg(2, &p2.round1_package),
             pkg(3, &p3.round1_package),
         ]),
     )?;
-    let r2_2 = zipher_engine::frost::frost_dkg_round2(
+    let r2_2 = zumbra_engine::frost::frost_dkg_round2(
         p2.secret_package,
         BTreeMap::from([
             pkg(1, &p1.round1_package),
             pkg(3, &p3.round1_package),
         ]),
     )?;
-    let r2_3 = zipher_engine::frost::frost_dkg_round2(
+    let r2_3 = zumbra_engine::frost::frost_dkg_round2(
         p3.secret_package,
         BTreeMap::from([
             pkg(1, &p1.round1_package),
@@ -233,7 +233,7 @@ fn local_2_of_3_dkg() -> Result<(
         ]),
     )?;
 
-    let c1 = zipher_engine::frost::frost_dkg_round3(
+    let c1 = zumbra_engine::frost::frost_dkg_round3(
         r2_1.secret_package,
         BTreeMap::from([
             pkg(2, &p2.round1_package),
@@ -244,7 +244,7 @@ fn local_2_of_3_dkg() -> Result<(
             pkg(3, r2_3.round2_packages.get(&1).unwrap()),
         ]),
     )?;
-    let c2 = zipher_engine::frost::frost_dkg_round3(
+    let c2 = zumbra_engine::frost::frost_dkg_round3(
         r2_2.secret_package,
         BTreeMap::from([
             pkg(1, &p1.round1_package),
@@ -255,7 +255,7 @@ fn local_2_of_3_dkg() -> Result<(
             pkg(3, r2_3.round2_packages.get(&2).unwrap()),
         ]),
     )?;
-    let c3 = zipher_engine::frost::frost_dkg_round3(
+    let c3 = zumbra_engine::frost::frost_dkg_round3(
         r2_3.secret_package,
         BTreeMap::from([
             pkg(1, &p1.round1_package),
@@ -288,12 +288,12 @@ pub async fn cmd_frost_wallet_create(cfg: &Config, birthday: u32) -> Result<()> 
     crate::helpers::ensure_sapling_params(&cfg.data_dir).await?;
 
     let (c1, c2, c3) = local_2_of_3_dkg()?;
-    let view = zipher_engine::frost::frost_create_view_from_group_key(
+    let view = zumbra_engine::frost::frost_create_view_from_group_key(
         c1.group_public_key_hex.clone(),
         cfg.network,
     )?;
 
-    zipher_engine::wallet::restore_from_ufvk(
+    zumbra_engine::wallet::restore_from_ufvk(
         &cfg.data_dir,
         &cfg.server_url,
         cfg.network,
@@ -302,7 +302,7 @@ pub async fn cmd_frost_wallet_create(cfg: &Config, birthday: u32) -> Result<()> 
         None,
     )
     .await?;
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
 
     let out = FrostWalletCreateResult {
         threshold: "2 of 3".to_string(),
@@ -350,43 +350,43 @@ pub async fn cmd_frost_spend(
 ) -> Result<()> {
     ensure_data_dir(&cfg.data_dir)?;
     auto_open(cfg).await?;
-    let synced = zipher_engine::query::get_synced_height().await.unwrap_or(0);
-    let latest = zipher_engine::wallet::fetch_latest_height(&cfg.server_url)
+    let synced = zumbra_engine::query::get_synced_height().await.unwrap_or(0);
+    let latest = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url)
         .await
         .unwrap_or(synced as u64) as u32;
-    zipher_engine::sync::set_progress(synced, latest).await;
+    zumbra_engine::sync::set_progress(synced, latest).await;
 
-    zipher_engine::send::propose_send(&to, amount, memo, false, false).await?;
-    let pczt = zipher_engine::send::create_pczt().await?;
-    let req = zipher_engine::frost::frost_pczt_signing_request(pczt.clone())?;
+    zumbra_engine::send::propose_send(&to, amount, memo, false, false).await?;
+    let pczt = zumbra_engine::send::create_pczt().await?;
+    let req = zumbra_engine::frost::frost_pczt_signing_request(pczt.clone())?;
     if req.orchard_actions.is_empty() {
         return Err(anyhow::anyhow!("PCZT did not contain Orchard actions to sign"));
     }
 
     let mut signatures = BTreeMap::new();
     for action in req.orchard_actions {
-        let s1 = zipher_engine::frost::frost_sign_round1(key1.clone())?;
-        let s2 = zipher_engine::frost::frost_sign_round1(key2.clone())?;
-        let signing_package = zipher_engine::frost::frost_create_signing_package(
+        let s1 = zumbra_engine::frost::frost_sign_round1(key1.clone())?;
+        let s2 = zumbra_engine::frost::frost_sign_round1(key2.clone())?;
+        let signing_package = zumbra_engine::frost::frost_create_signing_package(
             action.sighash_hex,
             BTreeMap::from([
                 (s1.participant_id, s1.signing_commitments.clone()),
                 (s2.participant_id, s2.signing_commitments.clone()),
             ]),
         )?;
-        let share1 = zipher_engine::frost::frost_sign_round2(
+        let share1 = zumbra_engine::frost::frost_sign_round2(
             signing_package.clone(),
             s1.signing_nonces.clone(),
             key1.clone(),
             action.randomizer_hex.clone(),
         )?;
-        let share2 = zipher_engine::frost::frost_sign_round2(
+        let share2 = zumbra_engine::frost::frost_sign_round2(
             signing_package.clone(),
             s2.signing_nonces.clone(),
             key2.clone(),
             action.randomizer_hex.clone(),
         )?;
-        let sig = zipher_engine::frost::frost_aggregate(
+        let sig = zumbra_engine::frost::frost_aggregate(
             signing_package,
             BTreeMap::from([
                 (s1.participant_id, share1),
@@ -398,9 +398,9 @@ pub async fn cmd_frost_spend(
         signatures.insert(action.action_index, sig.signature_hex);
     }
 
-    let signed = zipher_engine::frost::frost_pczt_apply_signatures(pczt, signatures)?;
+    let signed = zumbra_engine::frost::frost_pczt_apply_signatures(pczt, signatures)?;
     let txid = if broadcast {
-        Some(zipher_engine::send::store_and_broadcast_signed_pczt(&signed).await?)
+        Some(zumbra_engine::send::store_and_broadcast_signed_pczt(&signed).await?)
     } else {
         None
     };

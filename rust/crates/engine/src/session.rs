@@ -87,12 +87,12 @@ fn sessions_enc_path(data_dir: &str) -> PathBuf {
 
 /// Passphrase used for at-rest session encryption. Sessions hold CipherPay
 /// bearer tokens — they are payment credentials and must be encrypted on
-/// disk. Reuses the vault's `ZIPHER_VAULT_PASS` env (so operators don't
+/// disk. Reuses the vault's `ZUMBRA_VAULT_PASS` env (so operators don't
 /// have to manage a second secret) and falls back to the OWS passphrase
 /// if set. Returns `None` if neither is set — callers then keep the
 /// legacy plaintext path with a loud warning. Audit finding M1 (2026-05-18).
 fn session_encryption_passphrase() -> Option<String> {
-    if let Ok(p) = std::env::var("ZIPHER_VAULT_PASS") {
+    if let Ok(p) = std::env::var("ZUMBRA_VAULT_PASS") {
         if !p.is_empty() {
             return Some(p);
         }
@@ -123,7 +123,7 @@ pub fn load_sessions(data_dir: &str) -> SessionStore {
                     },
                     Err(e) => tracing::warn!(
                         "session store: failed to decrypt sessions.enc ({}); \
-                         is ZIPHER_VAULT_PASS / OWS_PASSPHRASE the same as when it was written?",
+                         is ZUMBRA_VAULT_PASS / OWS_PASSPHRASE the same as when it was written?",
                         e
                     ),
                 },
@@ -131,7 +131,7 @@ pub fn load_sessions(data_dir: &str) -> SessionStore {
             }
         } else {
             tracing::warn!(
-                "session store: sessions.enc exists but no ZIPHER_VAULT_PASS / OWS_PASSPHRASE \
+                "session store: sessions.enc exists but no ZUMBRA_VAULT_PASS / OWS_PASSPHRASE \
                  in env. Cannot decrypt. Treating as empty."
             );
         }
@@ -170,7 +170,7 @@ pub fn save_sessions(data_dir: &str, store: &SessionStore) -> Result<()> {
         // happens in dev/demo setups; production deployments MUST set
         // a vault passphrase.
         tracing::warn!(
-            "session store: ZIPHER_VAULT_PASS / OWS_PASSPHRASE not set. \
+            "session store: ZUMBRA_VAULT_PASS / OWS_PASSPHRASE not set. \
              Writing sessions.json in PLAINTEXT. Bearer tokens are payment credentials — \
              set a vault passphrase for at-rest encryption."
         );
@@ -199,7 +199,7 @@ fn client() -> reqwest::Client {
 /// Open a new session by notifying CipherPay of a deposit transaction.
 ///
 /// The agent must have already sent ZEC to the merchant's address with
-/// a memo containing `zipher:session:{merchant_id}`.
+/// a memo containing `zumbra:session:{merchant_id}`.
 pub async fn open_session(
     cipherpay_url: Option<&str>,
     txid: &str,

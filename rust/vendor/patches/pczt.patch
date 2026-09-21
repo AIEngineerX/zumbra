@@ -127,7 +127,7 @@
      "cfg(live_network_tests)",
  ]
 +
-+[dependencies.zipher-rng-compat]
++[dependencies.zumbra-rng-compat]
 +path = "../../crates/rng-compat"
 --- a/src/roles/io_finalizer/mod.rs
 +++ b/src/roles/io_finalizer/mod.rs
@@ -136,7 +136,7 @@
  //! - Updates the various bsk values using the rcv information from spends and outputs.
  
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  use zcash_primitives::transaction::{sighash::SignableInput, txid::TxIdDigester};
  
  use crate::{
@@ -145,7 +145,7 @@
 @@ -1,5 +1,5 @@
  use orchard::circuit::ProvingKey;
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  
  use crate::{Pczt, common::AnchorRequirement};
  
@@ -153,7 +153,7 @@
 +++ b/src/roles/prover/sapling.rs
 @@ -1,4 +1,4 @@
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  use sapling::prover::{OutputProver, SpendProver};
  
  use crate::{Pczt, common::AnchorRequirement};
@@ -164,7 +164,7 @@
  use blake2b_simd::Hash as Blake2bHash;
  use orchard::primitives::redpallas;
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  
  use ::transparent::sighash::{SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
  use zcash_primitives::transaction::{
@@ -175,7 +175,7 @@
  
  use core::marker::PhantomData;
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  
  use zcash_primitives::transaction::{
      Authorization, Transaction,
@@ -184,7 +184,7 @@
 @@ -1,5 +1,5 @@
  use orchard::{Bundle, bundle::Authorized, circuit::VerifyingKey};
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  use zcash_protocol::value::ZatBalance;
  
  pub(super) fn verify_bundle(
@@ -192,7 +192,7 @@
 +++ b/src/roles/tx_extractor/sapling.rs
 @@ -1,4 +1,4 @@
 -use rand_core::OsRng;
-+use zipher_rng_compat::OS_RNG as OsRng;
++use zumbra_rng_compat::OS_RNG as OsRng;
  use sapling::{
      BatchValidator, Bundle,
      bundle::Authorized,

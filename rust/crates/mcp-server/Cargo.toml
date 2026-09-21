@@ -1,14 +1,14 @@
 [package]
-name = "zipher-mcp-server"
+name = "zumbra-mcp"
 version = "0.3.0"
 edition = "2021"
 
 [[bin]]
-name = "zipher-mcp-server"
+name = "zumbra-mcp"
 path = "src/main.rs"
 
 [dependencies]
-zipher-engine = { path = "../engine" }
+zumbra-engine = { path = "../engine" }
 ows-lib = { path = "../../../ows-core/ows/crates/ows-lib" }
 ows-signer = { path = "../../../ows-core/ows/crates/ows-signer" }
 rmcp = { version = "1", features = ["server", "macros", "transport-io", "schemars"] }

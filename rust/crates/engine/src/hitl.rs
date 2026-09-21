@@ -1,6 +1,6 @@
 //! Mobile HITL (Human-In-The-Loop) Approval Relay
 //!
-//! Connects headless agents (CLI/MCP) to the Zipher mobile app for
+//! Connects headless agents (CLI/MCP) to the Zumbra mobile app for
 //! transaction approvals that exceed spending policy thresholds.
 //!
 //! Architecture:
@@ -52,7 +52,7 @@ pub struct HitlDecision {
     pub reason: Option<String>,
 }
 
-/// Pairing state stored locally — derived from `zipher pair <code>`.
+/// Pairing state stored locally — derived from `zumbra pair <code>`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HitlPairing {
     pub channel_id: String,
@@ -126,7 +126,7 @@ pub fn get_config(data_dir: &str) -> HitlConfig {
 pub fn generate_pairing_code(data_dir: &str) -> Result<(String, String)> {
     let channel_id = format!("ch_{:016x}", rand::random::<u64>());
     let pairing_code = format!(
-        "zipher://pair?channel={}&relay={}",
+        "zumbra://pair?channel={}&relay={}",
         channel_id,
         get_config(data_dir).relay_url,
     );
@@ -179,7 +179,7 @@ pub async fn push_approval_request(
         return Ok(());
     }
     let pairing = config.pairing.as_ref().ok_or_else(|| {
-        anyhow!("HITL enabled but no pairing configured. Run `zipher pair` first.")
+        anyhow!("HITL enabled but no pairing configured. Run `zumbra pair` first.")
     })?;
 
     let now = std::time::SystemTime::now()

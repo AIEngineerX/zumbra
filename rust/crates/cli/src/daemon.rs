@@ -78,7 +78,7 @@ pub async fn cmd_start(cfg: &Config) -> Result<()> {
     });
 
     auto_open(cfg).await?;
-    zipher_engine::sync::start().await?;
+    zumbra_engine::sync::start().await?;
 
     if cfg.human {
         eprintln!("Daemon started (pid {}). Sync running.", std::process::id());
@@ -132,8 +132,8 @@ pub async fn cmd_start(cfg: &Config) -> Result<()> {
         }
     }
 
-    zipher_engine::sync::stop().await;
-    zipher_engine::wallet::close().await;
+    zumbra_engine::sync::stop().await;
+    zumbra_engine::wallet::close().await;
 
     if let Some(ref mut s) = *state.seed.write().await {
         s.zeroize();
@@ -163,7 +163,7 @@ async fn handle_ipc_command(
         "ping" => r#"{"ok":true,"data":"pong"}"#.to_string(),
 
         "status" => {
-            let progress = zipher_engine::sync::get_progress().await;
+            let progress = zumbra_engine::sync::get_progress().await;
             let locked = state.locked.load(Ordering::SeqCst);
             serde_json::to_string(&serde_json::json!({
                 "ok": true,
@@ -185,7 +185,7 @@ async fn handle_ipc_command(
             *seed_guard = None;
             state.locked.store(true, Ordering::SeqCst);
 
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 data_dir,
                 "daemon_lock",
                 None,
@@ -213,7 +213,7 @@ async fn handle_ipc_command(
             *seed_guard = Some(seed_value);
             state.locked.store(false, Ordering::SeqCst);
 
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 data_dir,
                 "daemon_unlock",
                 None,

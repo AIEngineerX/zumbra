@@ -6,12 +6,12 @@ const https = require("https");
 const crypto = require("crypto");
 const { execFileSync } = require("node:child_process");
 
-const REPO = "atmospherelabs-dev/zipher-app";
+const REPO = "atmospherelabs-dev/zumbra-app";
 const BIN_DIR = path.join(__dirname, "native");
 
 const BINARIES = [
-  { name: "zipher-cli", prefix: "zipher-cli" },
-  { name: "zipher-mcp-server", prefix: "zipher-mcp-server" },
+  { name: "zumbra", prefix: "zumbra" },
+  { name: "zumbra-mcp", prefix: "zumbra-mcp" },
 ];
 
 const PLATFORM_MAP = {
@@ -99,7 +99,7 @@ async function main() {
     }
   }
 
-  console.log("\nSetup: zipher wallet init");
+  console.log("\nSetup: zumbra wallet init");
 }
 
 function verifyChecksum(data, checksum, artifact) {

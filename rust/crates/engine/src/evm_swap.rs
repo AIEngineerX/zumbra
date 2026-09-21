@@ -12,7 +12,7 @@ use tracing::info;
 use crate::evm;
 
 const PARASWAP_API: &str = "https://api.paraswap.io";
-const PARTNER: &str = "zipher";
+const PARTNER: &str = "zumbra";
 
 // ---------------------------------------------------------------------------
 // API response types

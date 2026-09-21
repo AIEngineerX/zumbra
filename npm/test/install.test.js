@@ -6,10 +6,10 @@ const { verifyChecksum, getPlatformKey } = require('../install');
 test('accepts only the matching release artifact and digest', () => {
   const bytes = Buffer.from('disposable test artifact');
   const hash = createHash('sha256').update(bytes).digest('hex');
-  verifyChecksum(bytes, `${hash}  zipher-cli-darwin-arm64\n`, 'zipher-cli-darwin-arm64');
-  assert.throws(() => verifyChecksum(Buffer.from('tampered'), `${hash}  zipher-cli-darwin-arm64`, 'zipher-cli-darwin-arm64'));
-  assert.throws(() => verifyChecksum(bytes, `${hash}  another-file`, 'zipher-cli-darwin-arm64'));
-  assert.throws(() => verifyChecksum(bytes, 'invalid', 'zipher-cli-darwin-arm64'));
+  verifyChecksum(bytes, `${hash}  zumbra-darwin-arm64\n`, 'zumbra-darwin-arm64');
+  assert.throws(() => verifyChecksum(Buffer.from('tampered'), `${hash}  zumbra-darwin-arm64`, 'zumbra-darwin-arm64'));
+  assert.throws(() => verifyChecksum(bytes, `${hash}  another-file`, 'zumbra-darwin-arm64'));
+  assert.throws(() => verifyChecksum(bytes, 'invalid', 'zumbra-darwin-arm64'));
 });
 
 const fs = require('node:fs');
@@ -18,19 +18,19 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 test('the public launcher executes the installed native artifact and forwards status', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zipher-launcher-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zumbra-launcher-'));
   try {
     fs.mkdirSync(path.join(dir, 'bin'));
     fs.mkdirSync(path.join(dir, 'native'));
     fs.copyFileSync(path.join(__dirname, '../run.js'), path.join(dir, 'run.js'));
-    fs.copyFileSync(path.join(__dirname, '../bin/zipher'), path.join(dir, 'bin/zipher'));
-    fs.writeFileSync(path.join(dir, 'native/zipher-cli'),
+    fs.copyFileSync(path.join(__dirname, '../bin/zumbra'), path.join(dir, 'bin/zumbra'));
+    fs.writeFileSync(path.join(dir, 'native/zumbra'),
       '#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify(process.argv.slice(2))); process.exit(7);\n', { mode: 0o755 });
-    const result = spawnSync(process.execPath, [path.join(dir, 'bin/zipher'), '--version', 'two words'], { encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [path.join(dir, 'bin/zumbra'), '--version', 'two words'], { encoding: 'utf8' });
     assert.equal(result.status, 7);
     assert.deepEqual(JSON.parse(result.stdout), ['--version', 'two words']);
-    fs.unlinkSync(path.join(dir, 'native/zipher-cli'));
-    const missing = spawnSync(process.execPath, [path.join(dir, 'bin/zipher')], { encoding: 'utf8' });
+    fs.unlinkSync(path.join(dir, 'native/zumbra'));
+    const missing = spawnSync(process.execPath, [path.join(dir, 'bin/zumbra')], { encoding: 'utf8' });
     assert.equal(missing.status, 1);
     assert.match(missing.stderr, /executable is missing/);
   } finally {

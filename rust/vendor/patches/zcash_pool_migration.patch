@@ -42,7 +42,7 @@
      "cfg(live_network_tests)",
  ]
 +
-+[dependencies.zipher-rng-compat]
++[dependencies.zumbra-rng-compat]
 +path = "../../crates/rng-compat"
 --- a/src/build/prep.rs
 +++ b/src/build/prep.rs
@@ -51,7 +51,7 @@
  
      let build_result = builder
 -        .build_for_pczt(rng, &Zip317FeeRule::standard())
-+        .build_for_pczt(zipher_rng_compat::From06(rng), &Zip317FeeRule::standard())
++        .build_for_pczt(zumbra_rng_compat::From06(rng), &Zip317FeeRule::standard())
          .map_err(|e| BuildError::Build(format!("preparation: build: {e}")))?;
  
      // Un-shuffle and RECOVER: map each requested output to its real action index (the fabricated
@@ -62,7 +62,7 @@
  
      let build_result = builder
 -        .build_for_pczt(rng, &Zip317FeeRule::standard())
-+        .build_for_pczt(zipher_rng_compat::From06(rng), &Zip317FeeRule::standard())
++        .build_for_pczt(zumbra_rng_compat::From06(rng), &Zip317FeeRule::standard())
          .map_err(|e| BuildError::Build(format!("transfer: build: {e}")))?;
  
      finalize_pczt(params, build_result.pczt_parts, account_derivation)

@@ -344,7 +344,7 @@ struct ReviewedSend {
 }
 
 #[derive(Clone)]
-struct ZipherMcpServer {
+struct ZumbraMcpServer {
     data_dir: String,
     seed: Arc<RwLock<Option<SecretString>>>,
     locked: Arc<std::sync::atomic::AtomicBool>,
@@ -357,28 +357,28 @@ struct ZipherMcpServer {
 // Tool implementations
 // ---------------------------------------------------------------------------
 
-impl ZipherMcpServer {
+impl ZumbraMcpServer {
     // Caller holds PAYMENT_OPERATION from proposal creation through broadcast.
     async fn confirm_accounted(&self, seed: &SecretString, address: &str,
         amount: u64, fee: u64, context_id: &Option<String>) -> Result<String> {
         if self.locked.load(std::sync::atomic::Ordering::SeqCst) {
             anyhow::bail!("WALLET_LOCKED");
         }
-        let policy = zipher_engine::policy::load_policy_checked(&self.data_dir)?;
-        zipher_engine::policy::check_rate_limit(&policy)
+        let policy = zumbra_engine::policy::load_policy_checked(&self.data_dir)?;
+        zumbra_engine::policy::check_rate_limit(&policy)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
-        let reservation = zipher_engine::audit::reserve_spend(
+        let reservation = zumbra_engine::audit::reserve_spend(
             &self.data_dir, address, amount, fee, context_id, &policy)?;
         // A failure may be an ambiguous broadcast. Never release its reserved
         // budget automatically, or retry the payment on behalf of the caller.
-        let txid = zipher_engine::send::confirm_send(seed).await?;
-        zipher_engine::audit::settle_spend(&self.data_dir, reservation, &txid)?;
+        let txid = zumbra_engine::send::confirm_send(seed).await?;
+        zumbra_engine::audit::settle_spend(&self.data_dir, reservation, &txid)?;
         Ok(txid)
     }
 }
 
 #[tool_router]
-impl ZipherMcpServer {
+impl ZumbraMcpServer {
     #[tool(description = "Get wallet status: sync height, balance, primary address, policy summary, and seed source")]
     async fn wallet_status(&self) -> String {
         #[derive(Serialize)]
@@ -386,23 +386,23 @@ impl ZipherMcpServer {
             synced_height: u32,
             latest_height: u32,
             is_syncing: bool,
-            balance: zipher_engine::types::WalletBalance,
+            balance: zumbra_engine::types::WalletBalance,
             address: Option<String>,
-            policy: zipher_engine::policy::SpendingPolicy,
+            policy: zumbra_engine::policy::SpendingPolicy,
             locked: bool,
             seed_source: String,
         }
 
-        let progress = zipher_engine::sync::get_progress().await;
-        let balance = match zipher_engine::query::get_wallet_balance().await {
+        let progress = zumbra_engine::sync::get_progress().await;
+        let balance = match zumbra_engine::query::get_wallet_balance().await {
             Ok(b) => b,
             Err(e) => return err_response(&e),
         };
-        let address = zipher_engine::query::get_addresses()
+        let address = zumbra_engine::query::get_addresses()
             .await
             .ok()
             .and_then(|a| a.first().map(|info| info.address.clone()));
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
 
@@ -438,7 +438,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Get pool-specific wallet balance (shielded orchard, shielded sapling, transparent, unconfirmed)")]
     async fn get_balance(&self) -> String {
-        match zipher_engine::query::get_wallet_balance().await {
+        match zumbra_engine::query::get_wallet_balance().await {
             Ok(balance) => ok_response(balance),
             Err(e) => err_response(&e),
         }
@@ -448,33 +448,33 @@ impl ZipherMcpServer {
     async fn propose_send(&self, Parameters(params): Parameters<ProposeSendParams>) -> String {
         let _payment = PAYMENT_OPERATION.lock().await;
         self.reviewed_send.lock().await.take();
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
-        let daily_spent = match zipher_engine::audit::daily_spent(&self.data_dir) {
+        let daily_spent = match zumbra_engine::audit::daily_spent(&self.data_dir) {
             Ok(v) => v, Err(e) => return err_response(&e),
         };
 
-        if let Err(violation) = zipher_engine::policy::check_proposal(
+        if let Err(violation) = zumbra_engine::policy::check_proposal(
             &policy, &params.address, params.amount, &params.context_id, daily_spent,
         ) {
 
 
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "propose_send", Some(&params.address),
                 Some(params.amount), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
             ).ok();
             let code = match &violation {
-                zipher_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
-                zipher_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
-                zipher_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
+                zumbra_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
                 _ => POLICY_EXCEEDED,
             };
             return err_code_response(code, &violation.to_string());
         }
 
-        match zipher_engine::send::propose_send(&params.address, params.amount, params.memo, false, false).await {
+        match zumbra_engine::send::propose_send(&params.address, params.amount, params.memo, false, false).await {
             Ok((send_amount, fee, _)) => {
                 let proposal_id = uuid::Uuid::new_v4().to_string();
                 *self.reviewed_send.lock().await = Some(ReviewedSend {
@@ -482,7 +482,7 @@ impl ZipherMcpServer {
                     address: params.address.clone(), amount: send_amount, fee,
                     context_id: params.context_id.clone(),
                 });
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "propose_send", Some(&params.address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     None, None,
@@ -510,7 +510,7 @@ impl ZipherMcpServer {
                 })
             }
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "propose_send", Some(&params.address),
                     Some(params.amount), None, params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -531,16 +531,16 @@ impl ZipherMcpServer {
         let seed_str = match seed_guard.as_ref() {
             Some(s) => s.clone(),
             None => {
-                return err_code_response(WALLET_LOCKED, "No seed available. Run `zipher wallet init` to create an encrypted vault, then restart the server from the trusted operator terminal.");
+                return err_code_response(WALLET_LOCKED, "No seed available. Run `zumbra wallet init` to create an encrypted vault, then restart the server from the trusted operator terminal.");
             }
         };
         drop(seed_guard);
 
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
-        if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-            zipher_engine::audit::log_event(
+        if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "confirm_send", None,
                 None, None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
@@ -559,8 +559,8 @@ impl ZipherMcpServer {
         match self.confirm_accounted(&seed_str, &reviewed.address, reviewed.amount,
             reviewed.fee, &reviewed.context_id).await {
             Ok(txid) => {
-                zipher_engine::policy::record_confirm();
-                zipher_engine::audit::log_event(
+                zumbra_engine::policy::record_confirm();
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "confirm_send", Some(&reviewed.address),
                     Some(reviewed.amount), Some(reviewed.fee), params.context_id.as_deref(),
                     Some(&txid), None,
@@ -571,7 +571,7 @@ impl ZipherMcpServer {
                 ok_response(ConfirmResult { txid })
             }
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "confirm_send", None,
                     None, None, params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -583,7 +583,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Get the current pending approval awaiting operator review, if any. Returns approval details or null.")]
     async fn get_pending_approval(&self) -> String {
-        match zipher_engine::policy::get_pending_approval() {
+        match zumbra_engine::policy::get_pending_approval() {
             Some(p) => ok_response(p),
             None => ok_response(serde_json::json!(null)),
         }
@@ -596,7 +596,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Get recent transaction history with memos")]
     async fn get_transactions(&self, Parameters(params): Parameters<GetTransactionsParams>) -> String {
-        match zipher_engine::query::get_transactions().await {
+        match zumbra_engine::query::get_transactions().await {
             Ok(mut txs) => {
                 txs.truncate(params.limit.unwrap_or(20));
                 ok_response(txs)
@@ -607,7 +607,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Get current sync status: synced height, latest height, whether syncing, any connection errors")]
     async fn sync_status(&self) -> String {
-        let progress = zipher_engine::sync::get_progress().await;
+        let progress = zumbra_engine::sync::get_progress().await;
         ok_response(progress)
     }
 
@@ -649,9 +649,9 @@ impl ZipherMcpServer {
 
     #[tool(description = "List available tokens for cross-chain swaps via Near Intents. Returns token symbols, blockchains, and prices.")]
     async fn swap_tokens(&self) -> String {
-        match zipher_engine::swap::get_tokens().await {
+        match zumbra_engine::swap::get_tokens().await {
             Ok(tokens) => {
-                let swappable: Vec<_> = zipher_engine::swap::swappable_tokens(&tokens)
+                let swappable: Vec<_> = zumbra_engine::swap::swappable_tokens(&tokens)
                     .into_iter()
                     .map(|t| serde_json::json!({
                         "asset_id": t.asset_id,
@@ -661,7 +661,7 @@ impl ZipherMcpServer {
                         "price": t.price,
                     }))
                     .collect();
-                let zec_id = zipher_engine::swap::find_zec_token(&tokens)
+                let zec_id = zumbra_engine::swap::find_zec_token(&tokens)
                     .map(|t| t.asset_id.clone());
                 ok_response(serde_json::json!({
                     "zec_asset_id": zec_id,
@@ -675,12 +675,12 @@ impl ZipherMcpServer {
 
     #[tool(description = "Get a swap quote: ZEC to another asset via Near Intents. Shows expected output amount and deposit address. Does NOT execute the swap.")]
     async fn swap_quote(&self, Parameters(params): Parameters<SwapQuoteParams>) -> String {
-        let tokens = match zipher_engine::swap::get_tokens().await {
+        let tokens = match zumbra_engine::swap::get_tokens().await {
             Ok(t) => t,
             Err(e) => return err_response(&e),
         };
 
-        let zec = match zipher_engine::swap::find_zec_token(&tokens) {
+        let zec = match zumbra_engine::swap::find_zec_token(&tokens) {
             Some(t) => t,
             None => return err_code_response(INTERNAL_ERROR, "ZEC not found in token list"),
         };
@@ -690,12 +690,12 @@ impl ZipherMcpServer {
             Err(e) => return err_code_response(INVALID_PROPOSAL, &format!("{e}")),
         };
 
-        let refund_addr = match zipher_engine::query::get_addresses().await {
+        let refund_addr = match zumbra_engine::query::get_addresses().await {
             Ok(addrs) => addrs.first().map(|a| a.address.clone()).unwrap_or_default(),
             Err(e) => return err_response(&e),
         };
 
-        match zipher_engine::swap::get_quote(
+        match zumbra_engine::swap::get_quote(
             &zec.asset_id,
             &dest.asset_id,
             &params.amount.to_string(),
@@ -723,12 +723,12 @@ impl ZipherMcpServer {
         };
         drop(seed_guard);
 
-        let tokens = match zipher_engine::swap::get_tokens().await {
+        let tokens = match zumbra_engine::swap::get_tokens().await {
             Ok(t) => t,
             Err(e) => return err_response(&e),
         };
 
-        let zec = match zipher_engine::swap::find_zec_token(&tokens) {
+        let zec = match zumbra_engine::swap::find_zec_token(&tokens) {
             Some(t) => t,
             None => return err_code_response(INTERNAL_ERROR, "ZEC not found in token list"),
         };
@@ -738,12 +738,12 @@ impl ZipherMcpServer {
             Err(e) => return err_code_response(INVALID_PROPOSAL, &format!("{e}")),
         };
 
-        let refund_addr = match zipher_engine::query::get_addresses().await {
+        let refund_addr = match zumbra_engine::query::get_addresses().await {
             Ok(addrs) => addrs.first().map(|a| a.address.clone()).unwrap_or_default(),
             Err(e) => return err_response(&e),
         };
 
-        let quote = match zipher_engine::swap::get_quote(
+        let quote = match zumbra_engine::swap::get_quote(
             &zec.asset_id,
             &dest.asset_id,
             &params.amount.to_string(),
@@ -759,30 +759,30 @@ impl ZipherMcpServer {
             return err_code_response(INTERNAL_ERROR, "No deposit address in quote");
         }
 
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
-        let daily_spent = match zipher_engine::audit::daily_spent(&self.data_dir) {
+        let daily_spent = match zumbra_engine::audit::daily_spent(&self.data_dir) {
             Ok(v) => v, Err(e) => return err_response(&e),
         };
-        if let Err(violation) = zipher_engine::policy::check_proposal(
+        if let Err(violation) = zumbra_engine::policy::check_proposal(
             &policy, &quote.deposit_address, params.amount, &params.context_id, daily_spent,
         ) {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "swap_execute", Some(&quote.deposit_address),
                 Some(params.amount), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
             ).ok();
             let code = match &violation {
-                zipher_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
-                zipher_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
-                zipher_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
+                zumbra_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
                 _ => POLICY_EXCEEDED,
             };
             return err_code_response(code, &violation.to_string());
         }
-        if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-            zipher_engine::audit::log_event(
+        if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "swap_execute", Some(&quote.deposit_address),
                 Some(params.amount), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
@@ -790,7 +790,7 @@ impl ZipherMcpServer {
             return err_code_response(POLICY_EXCEEDED, &violation.to_string());
         }
 
-        let (send_amount, fee, _) = match zipher_engine::send::propose_send(
+        let (send_amount, fee, _) = match zumbra_engine::send::propose_send(
             &quote.deposit_address, params.amount, None, false, false,
         ).await {
             Ok(r) => r,
@@ -802,8 +802,8 @@ impl ZipherMcpServer {
         }
         let txid = match self.confirm_accounted(&seed_str, &quote.deposit_address, send_amount, fee, &params.context_id).await {
             Ok(txid) => {
-                zipher_engine::policy::record_confirm();
-                zipher_engine::audit::log_event(
+                zumbra_engine::policy::record_confirm();
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "swap_execute", Some(&quote.deposit_address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     Some(&txid), None,
@@ -811,7 +811,7 @@ impl ZipherMcpServer {
                 txid
             }
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "swap_execute", Some(&quote.deposit_address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -820,7 +820,7 @@ impl ZipherMcpServer {
             }
         };
 
-        let _ = zipher_engine::swap::submit_deposit(&txid, &quote.deposit_address).await;
+        let _ = zumbra_engine::swap::submit_deposit(&txid, &quote.deposit_address).await;
 
         ok_response(serde_json::json!({
             "txid": txid,
@@ -836,7 +836,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Check the status of a cross-chain swap by its deposit address.")]
     async fn swap_status(&self, Parameters(params): Parameters<SwapStatusParams>) -> String {
-        match zipher_engine::swap::get_status(&params.deposit_address).await {
+        match zumbra_engine::swap::get_status(&params.deposit_address).await {
             Ok(status) => ok_response(&status),
             Err(e) => err_response(&e),
         }
@@ -857,31 +857,31 @@ impl ZipherMcpServer {
         };
         drop(seed_guard);
 
-        let memo = format!("zipher:session:{}", params.merchant_id);
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let memo = format!("zumbra:session:{}", params.merchant_id);
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
-        let daily_spent = match zipher_engine::audit::daily_spent(&self.data_dir) {
+        let daily_spent = match zumbra_engine::audit::daily_spent(&self.data_dir) {
             Ok(v) => v, Err(e) => return err_response(&e),
         };
-        if let Err(violation) = zipher_engine::policy::check_proposal(
+        if let Err(violation) = zumbra_engine::policy::check_proposal(
             &policy, &params.pay_to, params.deposit, &params.context_id, daily_spent,
         ) {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "session_open", Some(&params.pay_to),
                 Some(params.deposit), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
             ).ok();
             let code = match &violation {
-                zipher_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
-                zipher_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
-                zipher_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
+                zumbra_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
                 _ => POLICY_EXCEEDED,
             };
             return err_code_response(code, &violation.to_string());
         }
-        if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-            zipher_engine::audit::log_event(
+        if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "session_open", Some(&params.pay_to),
                 Some(params.deposit), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
@@ -889,7 +889,7 @@ impl ZipherMcpServer {
             return err_code_response(POLICY_EXCEEDED, &violation.to_string());
         }
 
-        let (send_amount, fee, _) = match zipher_engine::send::propose_send(
+        let (send_amount, fee, _) = match zumbra_engine::send::propose_send(
             &params.pay_to, params.deposit, Some(memo), false, false,
         ).await {
             Ok(r) => r,
@@ -898,8 +898,8 @@ impl ZipherMcpServer {
 
         let txid = match self.confirm_accounted(&seed_str, &params.pay_to, send_amount, fee, &params.context_id).await {
             Ok(txid) => {
-                zipher_engine::policy::record_confirm();
-                zipher_engine::audit::log_event(
+                zumbra_engine::policy::record_confirm();
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "session_open", Some(&params.pay_to),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     Some(&txid), None,
@@ -907,7 +907,7 @@ impl ZipherMcpServer {
                 txid
             }
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "session_open", Some(&params.pay_to),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -916,7 +916,7 @@ impl ZipherMcpServer {
             }
         };
 
-        match zipher_engine::session::open_session(
+        match zumbra_engine::session::open_session(
             None,
             &txid,
             &params.merchant_id,
@@ -941,20 +941,20 @@ impl ZipherMcpServer {
             host
         );
 
-        let session = match zipher_engine::session::find_session(&self.data_dir, &server_url) {
+        let session = match zumbra_engine::session::find_session(&self.data_dir, &server_url) {
             Some(s) => s,
             None => return err_code_response(INVALID_PROPOSAL, &format!("No active session for {server_url}")),
         };
 
         let method = params.method.as_deref().unwrap_or("GET");
-        match zipher_engine::session::session_request(&session, &params.url, method).await {
+        match zumbra_engine::session::session_request(&session, &params.url, method).await {
             Ok((status, body, remaining)) => {
                 if let Some(rem) = remaining {
-                    let mut store = zipher_engine::session::load_sessions(&self.data_dir);
+                    let mut store = zumbra_engine::session::load_sessions(&self.data_dir);
                     if let Some(s) = store.sessions.iter_mut().find(|s| s.session_id == session.session_id) {
                         s.balance_remaining = rem;
                     }
-                    zipher_engine::session::save_sessions(&self.data_dir, &store).ok();
+                    zumbra_engine::session::save_sessions(&self.data_dir, &store).ok();
                 }
                 ok_response(serde_json::json!({
                     "status": status,
@@ -969,7 +969,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "List all active sessions with their balances.")]
     async fn session_list(&self) -> String {
-        let sessions = zipher_engine::session::list_sessions(&self.data_dir);
+        let sessions = zumbra_engine::session::list_sessions(&self.data_dir);
         ok_response(serde_json::json!({
             "total": sessions.len(),
             "sessions": sessions,
@@ -978,7 +978,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Close a session and get final usage summary.")]
     async fn session_close(&self, Parameters(params): Parameters<SessionCloseParams>) -> String {
-        match zipher_engine::session::close_session(None, &params.session_id, &self.data_dir).await {
+        match zumbra_engine::session::close_session(None, &params.session_id, &self.data_dir).await {
             Ok(summary) => ok_response(&summary),
             Err(e) => err_response(&e),
         }
@@ -988,7 +988,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Create a CipherPay invoice for accepting ZEC payments. Returns payment address, QR URI, and checkout URL. Requires CIPHERPAY_API_KEY.")]
     async fn cipherpay_create_invoice(&self, Parameters(params): Parameters<CipherpayInvoiceParams>) -> String {
-        match zipher_engine::cipherpay::create_invoice(
+        match zumbra_engine::cipherpay::create_invoice(
             &params.product_name,
             params.amount,
             params.currency.as_deref().unwrap_or("USD"),
@@ -1000,7 +1000,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Check the status of a CipherPay invoice by ID. Returns status (pending/detected/confirmed/expired), received amount, and transaction ID if paid.")]
     async fn cipherpay_check_invoice(&self, Parameters(params): Parameters<CipherpayCheckParams>) -> String {
-        match zipher_engine::cipherpay::check_invoice(&params.invoice_id).await {
+        match zumbra_engine::cipherpay::check_invoice(&params.invoice_id).await {
             Ok(status) => ok_response(&status),
             Err(e) => err_response(&e),
         }
@@ -1008,7 +1008,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Get your CipherPay merchant balance and stats. Returns total ZEC received, confirmed payment count, and merchant info. Requires CIPHERPAY_API_KEY.")]
     async fn cipherpay_balance(&self) -> String {
-        match zipher_engine::cipherpay::merchant_balance().await {
+        match zumbra_engine::cipherpay::merchant_balance().await {
             Ok(balance) => ok_response(&balance),
             Err(e) => err_response(&e),
         }
@@ -1064,11 +1064,11 @@ impl ZipherMcpServer {
         }
         let body = initial_resp.text().await.unwrap_or_default();
 
-        let protocol = match zipher_engine::payment::detect_protocol(&headers, &body, expected_network) {
+        let protocol = match zumbra_engine::payment::detect_protocol(&headers, &body, expected_network) {
             Ok(p) => p,
             Err(zec_err) => {
                 // Try cross-chain EVM x402 detection
-                if let Ok(evm_info) = zipher_engine::evm_pay::parse_evm_x402(&body) {
+                if let Ok(evm_info) = zumbra_engine::evm_pay::parse_evm_x402(&body) {
                     let amount_human = evm_info.amount_raw.parse::<f64>().unwrap_or(0.0)
                         / 10f64.powi(evm_info.decimals as i32);
                     return ok_response(serde_json::json!({
@@ -1101,35 +1101,35 @@ impl ZipherMcpServer {
             Err(e) => return err_code_response(INVALID_PROPOSAL, &format!("{e}")),
         };
 
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
-        let daily_spent = match zipher_engine::audit::daily_spent(&self.data_dir) {
+        let daily_spent = match zumbra_engine::audit::daily_spent(&self.data_dir) {
             Ok(v) => v, Err(e) => return err_response(&e),
         };
-        if let Err(violation) = zipher_engine::policy::check_proposal(
+        if let Err(violation) = zumbra_engine::policy::check_proposal(
             &policy, &address, amount, &params.context_id, daily_spent,
         ) {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "pay_url", Some(&address),
                 Some(amount), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
             ).ok();
             return err_code_response(POLICY_EXCEEDED, &violation.to_string());
         }
-        if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
+        if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
             return err_code_response(POLICY_EXCEEDED, &violation.to_string());
         }
 
-        let (send_amount, fee, _) = match zipher_engine::send::propose_send(&address, amount, None, false, false).await {
+        let (send_amount, fee, _) = match zumbra_engine::send::propose_send(&address, amount, None, false, false).await {
             Ok(r) => r,
             Err(e) => return err_response(&e),
         };
 
         let txid = match self.confirm_accounted(&seed_str, &address, send_amount, fee, &params.context_id).await {
             Ok(txid) => {
-                zipher_engine::policy::record_confirm();
-                zipher_engine::audit::log_event(
+                zumbra_engine::policy::record_confirm();
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "pay_url", Some(&address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     Some(&txid), None,
@@ -1137,7 +1137,7 @@ impl ZipherMcpServer {
                 txid
             }
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "pay_url", Some(&address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -1176,7 +1176,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Research a prediction market topic using web search (Firecrawl). Returns news articles, snippets, and a summary the LLM can use to estimate probabilities. Set FIRECRAWL_API_KEY for web search; works without it but returns no external data.")]
     async fn market_research(&self, Parameters(params): Parameters<MarketResearchParams>) -> String {
-        match zipher_engine::research::search_news(
+        match zumbra_engine::research::search_news(
             &params.query,
             params.limit.unwrap_or(5),
         ).await {
@@ -1199,7 +1199,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Discover prediction markets on Polymarket. Returns active events with their markets, prices, and volume. Use to find betting opportunities.")]
     async fn polymarket_discover(&self, Parameters(params): Parameters<PolymarketDiscoverParams>) -> String {
-        match zipher_engine::polymarket::polymarket_discover(
+        match zumbra_engine::polymarket::polymarket_discover(
             params.keyword.as_deref(),
             params.limit.unwrap_or(10),
             false,
@@ -1217,7 +1217,7 @@ impl ZipherMcpServer {
             let seed_guard = self.seed.read().await;
             match seed_guard.as_ref() {
                 Some(s) => {
-                    match zipher_engine::polymarket::derive_address(s.expose_secret()) {
+                    match zumbra_engine::polymarket::derive_address(s.expose_secret()) {
                         Ok(a) => a,
                         Err(e) => return err_response(&e),
                     }
@@ -1226,7 +1226,7 @@ impl ZipherMcpServer {
             }
         };
 
-        match zipher_engine::polymarket::polymarket_get_positions(&address).await {
+        match zumbra_engine::polymarket::polymarket_get_positions(&address).await {
             Ok(positions) => ok_response(&positions),
             Err(e) => err_response(&e),
         }
@@ -1241,31 +1241,31 @@ impl ZipherMcpServer {
         };
         drop(seed_guard);
 
-        let chain = match zipher_engine::evm::chain_by_name(&params.chain) {
+        let chain = match zumbra_engine::evm::chain_by_name(&params.chain) {
             Some(c) => c,
             None => return err_code_response(INVALID_PROPOSAL, &format!("Unknown chain '{}'. Use: polygon, bsc, base, arb, eth, op", params.chain)),
         };
 
-        let address = match zipher_engine::ows::derive_evm_address(seed_str.expose_secret()) {
+        let address = match zumbra_engine::ows::derive_evm_address(seed_str.expose_secret()) {
             Ok(a) => a,
             Err(e) => return err_response(&e),
         };
 
-        let native_bal = zipher_engine::evm::get_native_balance(chain.rpc_url, &address)
+        let native_bal = zumbra_engine::evm::get_native_balance(chain.rpc_url, &address)
             .await
             .unwrap_or(0);
 
-        let known = zipher_engine::evm::known_tokens(chain.chain_id);
+        let known = zumbra_engine::evm::known_tokens(chain.chain_id);
         let mut token_balances = Vec::new();
         for tok in &known {
-            let bal = zipher_engine::evm::get_erc20_balance(chain.rpc_url, &tok.address, &address)
+            let bal = zumbra_engine::evm::get_erc20_balance(chain.rpc_url, &tok.address, &address)
                 .await
                 .unwrap_or(0);
             if bal > 0 {
                 token_balances.push(serde_json::json!({
                     "symbol": tok.symbol,
                     "balance_raw": bal.to_string(),
-                    "balance": zipher_engine::evm::format_token_amount(bal, tok.decimals),
+                    "balance": zumbra_engine::evm::format_token_amount(bal, tok.decimals),
                     "decimals": tok.decimals,
                     "contract": tok.address,
                 }));
@@ -1277,7 +1277,7 @@ impl ZipherMcpServer {
             "chain_id": chain.chain_id,
             "address": address,
             "native_balance_wei": native_bal.to_string(),
-            "native_balance": zipher_engine::evm::format_token_amount(native_bal, 18),
+            "native_balance": zumbra_engine::evm::format_token_amount(native_bal, 18),
             "native_symbol": chain.native_symbol,
             "tokens": token_balances,
         }))
@@ -1292,17 +1292,17 @@ impl ZipherMcpServer {
         };
         drop(seed_guard);
 
-        let address = match zipher_engine::ows::derive_evm_address(seed_str.expose_secret()) {
+        let address = match zumbra_engine::ows::derive_evm_address(seed_str.expose_secret()) {
             Ok(a) => a,
             Err(e) => return err_response(&e),
         };
 
-        let tokens = match zipher_engine::swap::get_tokens().await {
+        let tokens = match zumbra_engine::swap::get_tokens().await {
             Ok(t) => t,
             Err(e) => return err_response(&e),
         };
 
-        let zec = match zipher_engine::swap::find_zec_token(&tokens) {
+        let zec = match zumbra_engine::swap::find_zec_token(&tokens) {
             Some(t) => t,
             None => return err_code_response(INTERNAL_ERROR, "ZEC not found in token list"),
         };
@@ -1317,28 +1317,28 @@ impl ZipherMcpServer {
             None => return err_code_response(INVALID_PROPOSAL, &format!("{} on {} not found in swap tokens", params.token, params.chain)),
         };
 
-        let zec_address = match zipher_engine::query::get_addresses().await {
+        let zec_address = match zumbra_engine::query::get_addresses().await {
             Ok(addrs) => addrs.first().map(|a| a.address.clone()).unwrap_or_default(),
             Err(e) => return err_response(&e),
         };
 
         // Get balance to know how much to sweep
-        let evm_chain = match zipher_engine::evm::chain_by_name(&params.chain) {
+        let evm_chain = match zumbra_engine::evm::chain_by_name(&params.chain) {
             Some(c) => c,
             None => return err_code_response(INVALID_PROPOSAL, &format!("Unknown chain '{}'", params.chain)),
         };
 
         let balance = if source_token.symbol.eq_ignore_ascii_case(&evm_chain.native_symbol) {
-            zipher_engine::evm::get_native_balance(evm_chain.rpc_url, &address)
+            zumbra_engine::evm::get_native_balance(evm_chain.rpc_url, &address)
                 .await
                 .unwrap_or(0)
         } else {
-            let contract = zipher_engine::evm_pay::token_contract(&params.token, evm_chain.chain_id)
+            let contract = zumbra_engine::evm_pay::token_contract(&params.token, evm_chain.chain_id)
                 .unwrap_or("");
             if contract.is_empty() {
                 return err_code_response(INVALID_PROPOSAL, &format!("No known contract for {} on {}", params.token, params.chain));
             }
-            zipher_engine::evm::get_erc20_balance(evm_chain.rpc_url, contract, &address)
+            zumbra_engine::evm::get_erc20_balance(evm_chain.rpc_url, contract, &address)
                 .await
                 .unwrap_or(0)
         };
@@ -1352,7 +1352,7 @@ impl ZipherMcpServer {
             }));
         }
 
-        match zipher_engine::swap::get_quote(
+        match zumbra_engine::swap::get_quote(
             &source_token.asset_id,
             &zec.asset_id,
             &balance.to_string(),
@@ -1364,7 +1364,7 @@ impl ZipherMcpServer {
                 "token": params.token,
                 "chain": params.chain,
                 "balance_raw": balance.to_string(),
-                "balance": zipher_engine::evm::format_token_amount(balance, source_token.decimals as u8),
+                "balance": zumbra_engine::evm::format_token_amount(balance, source_token.decimals as u8),
                 "estimated_zec_out": quote.amount_out,
                 "deposit_address": quote.deposit_address,
                 "note": "To execute: approve + transfer tokens to deposit_address, then submit deposit to NEAR Intents.",
@@ -1391,7 +1391,7 @@ impl ZipherMcpServer {
         let Some(seed) = seed_guard.as_ref() else {
             return err_code_response(WALLET_LOCKED, "No signing seed is available for plan derivation.");
         };
-        match zipher_engine::ironwood_v2::plan(seed).await {
+        match zumbra_engine::ironwood_v2::plan(seed).await {
             Ok(plan) => ok_response(plan),
             Err(e) => err_response(&e),
         }
@@ -1405,7 +1405,7 @@ impl ZipherMcpServer {
 
     #[tool(description = "Read the current Ironwood migration state from the wallet's SDK database, including confirmed transactions and next due height.")]
     async fn ironwood_status(&self, Parameters(_params): Parameters<IronwoodStatusParams>) -> String {
-        match zipher_engine::ironwood_v2::status().await {
+        match zumbra_engine::ironwood_v2::status().await {
             Ok(report) => ok_response(report),
             Err(e) => err_response(&e),
         }
@@ -1423,14 +1423,14 @@ impl ZipherMcpServer {
 
     // --- HITL tools ---
 
-    #[tool(description = "Generate a pairing code for connecting this agent to a Zipher mobile wallet. The mobile wallet scans this code to establish a secure approval channel.")]
+    #[tool(description = "Generate a pairing code for connecting this agent to a Zumbra mobile wallet. The mobile wallet scans this code to establish a secure approval channel.")]
     async fn hitl_pair(&self, Parameters(params): Parameters<HitlPairParams>) -> String {
-        let (channel_id, pairing_code) = match zipher_engine::hitl::generate_pairing_code(&self.data_dir) {
+        let (channel_id, pairing_code) = match zumbra_engine::hitl::generate_pairing_code(&self.data_dir) {
             Ok(r) => r,
             Err(e) => return err_response(&e),
         };
 
-        match zipher_engine::hitl::complete_pairing(
+        match zumbra_engine::hitl::complete_pairing(
             &self.data_dir,
             &channel_id,
             &params.device_name,
@@ -1441,7 +1441,7 @@ impl ZipherMcpServer {
                 "pairing_code": pairing_code,
                 "relay_url": config.relay_url,
                 "device_name": params.device_name,
-                "instructions": "Show this pairing code to the Zipher mobile app. Scan it in Settings > Agent Pairing.",
+                "instructions": "Show this pairing code to the Zumbra mobile app. Scan it in Settings > Agent Pairing.",
             })),
             Err(e) => err_response(&e),
         }
@@ -1449,12 +1449,12 @@ impl ZipherMcpServer {
 
     #[tool(description = "Check HITL relay status: whether mobile pairing is active, and fetch any pending approval decisions.")]
     async fn hitl_status(&self) -> String {
-        let config = zipher_engine::hitl::get_config(&self.data_dir);
-        let pending = zipher_engine::policy::get_pending_approval();
+        let config = zumbra_engine::hitl::get_config(&self.data_dir);
+        let pending = zumbra_engine::policy::get_pending_approval();
 
         let mut decision = None;
         if let (Some(ref p), true) = (&pending, config.enabled) {
-            decision = zipher_engine::hitl::poll_decision(&self.data_dir, &p.id)
+            decision = zumbra_engine::hitl::poll_decision(&self.data_dir, &p.id)
                 .await
                 .ok()
                 .flatten();
@@ -1488,7 +1488,7 @@ impl ZipherMcpServer {
         let seed_str = match seed_guard.as_ref() {
             Some(s) => s.clone(),
             None => {
-                return err_code_response(WALLET_LOCKED, "No seed available. Run `zipher wallet init` to create an encrypted vault, then restart the server from the trusted operator terminal.");
+                return err_code_response(WALLET_LOCKED, "No seed available. Run `zumbra wallet init` to create an encrypted vault, then restart the server from the trusted operator terminal.");
             }
         };
         drop(seed_guard);
@@ -1499,44 +1499,44 @@ impl ZipherMcpServer {
             "zcash:mainnet"
         };
 
-        let req = match zipher_engine::x402::parse_402_response(&params.payment_body, expected_network) {
+        let req = match zumbra_engine::x402::parse_402_response(&params.payment_body, expected_network) {
             Ok(r) => r,
             Err(e) => return err_code_response(INVALID_PROPOSAL, &format!("Invalid x402 body: {e}")),
         };
 
-        let amount = match zipher_engine::x402::amount_zatoshis(&req) {
+        let amount = match zumbra_engine::x402::amount_zatoshis(&req) {
             Ok(a) => a,
             Err(e) => return err_code_response(INVALID_PROPOSAL, &format!("{e}")),
         };
 
         let address = req.pay_to.clone();
 
-        let policy = match zipher_engine::policy::load_policy_checked(&self.data_dir) {
+        let policy = match zumbra_engine::policy::load_policy_checked(&self.data_dir) {
             Ok(p) => p, Err(e) => return err_response(&e),
         };
-        let daily_spent = match zipher_engine::audit::daily_spent(&self.data_dir) {
+        let daily_spent = match zumbra_engine::audit::daily_spent(&self.data_dir) {
             Ok(v) => v, Err(e) => return err_response(&e),
         };
 
-        if let Err(violation) = zipher_engine::policy::check_proposal(
+        if let Err(violation) = zumbra_engine::policy::check_proposal(
             &policy, &address, amount, &params.context_id, daily_spent,
         ) {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "x402_pay", Some(&address),
                 Some(amount), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
             ).ok();
             let code = match &violation {
-                zipher_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
-                zipher_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
-                zipher_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::AddressNotAllowed { .. } => ADDRESS_NOT_ALLOWED,
+                zumbra_engine::policy::PolicyViolation::ContextRequired => CONTEXT_REQUIRED,
+                zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. } => APPROVAL_REQUIRED,
                 _ => POLICY_EXCEEDED,
             };
             return err_code_response(code, &violation.to_string());
         }
 
-        if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-            zipher_engine::audit::log_event(
+        if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+            zumbra_engine::audit::log_event(
                 &self.data_dir, "x402_pay", Some(&address),
                 Some(amount), None, params.context_id.as_deref(),
                 None, Some(&violation.to_string()),
@@ -1544,10 +1544,10 @@ impl ZipherMcpServer {
             return err_code_response(POLICY_EXCEEDED, &violation.to_string());
         }
 
-        let (send_amount, fee, _) = match zipher_engine::send::propose_send(&address, amount, None, false, false).await {
+        let (send_amount, fee, _) = match zumbra_engine::send::propose_send(&address, amount, None, false, false).await {
             Ok(r) => r,
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "x402_pay", Some(&address),
                     Some(amount), None, params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -1558,14 +1558,14 @@ impl ZipherMcpServer {
 
         match self.confirm_accounted(&seed_str, &address, send_amount, fee, &params.context_id).await {
             Ok(txid) => {
-                zipher_engine::policy::record_confirm();
-                zipher_engine::audit::log_event(
+                zumbra_engine::policy::record_confirm();
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "x402_pay", Some(&address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     Some(&txid), None,
                 ).ok();
 
-                let payment_signature = zipher_engine::x402::build_payment_signature(&txid, &req);
+                let payment_signature = zumbra_engine::x402::build_payment_signature(&txid, &req);
 
                 #[derive(Serialize)]
                 struct X402Result {
@@ -1585,7 +1585,7 @@ impl ZipherMcpServer {
                 })
             }
             Err(e) => {
-                zipher_engine::audit::log_event(
+                zumbra_engine::audit::log_event(
                     &self.data_dir, "x402_pay", Some(&address),
                     Some(send_amount), Some(fee), params.context_id.as_deref(),
                     None, Some(&format!("{:#}", e)),
@@ -1597,20 +1597,20 @@ impl ZipherMcpServer {
 }
 
 #[tool_handler]
-impl ServerHandler for ZipherMcpServer {
+impl ServerHandler for ZumbraMcpServer {
     fn get_info(&self) -> ServerInfo {
         let mut info = rmcp::model::Implementation::from_build_env();
-        info.name = "zipher-mcp-server".into();
+        info.name = "zumbra-mcp".into();
         info.version = env!("CARGO_PKG_VERSION").into();
-        info.title = Some("Zipher — Shielded Wallet for AI Agents".into());
+        info.title = Some("Zumbra — Shielded Wallet for AI Agents".into());
         info.description = Some("Headless Zcash wallet with encrypted vault, spending policies, and x402 paywall access".into());
-        info.website_url = Some("https://zipher.app".into());
+        info.website_url = Some("https://zumbra.app".into());
 
         ServerInfo::default()
             .with_server_info(info)
             .with_instructions(
-                "Zipher: headless Zcash wallet + multi-chain agent toolkit for AI. \
-                 Seed is secured in an encrypted vault (OWS or Zipher) — never pass it as a tool argument. \
+                "Zumbra: headless Zcash wallet + multi-chain agent toolkit for AI. \
+                 Seed is secured in an encrypted vault (OWS or Zumbra) — never pass it as a tool argument. \
                  wallet_lock clears access; only a trusted operator restart can unlock. Threshold payments require the operator CLI, not an MCP approval tool. \
                  Paid APIs: pay_url auto-detects x402/MPP, pays, returns response. \
                  Cross-chain: swap_execute converts ZEC to any asset via Near Intents. \
@@ -1626,11 +1626,11 @@ impl ServerHandler for ZipherMcpServer {
 // ---------------------------------------------------------------------------
 
 fn find_dest_token<'a>(
-    tokens: &'a [zipher_engine::swap::SwapToken],
+    tokens: &'a [zumbra_engine::swap::SwapToken],
     symbol: &str,
     chain: Option<&str>,
-) -> anyhow::Result<&'a zipher_engine::swap::SwapToken> {
-    let matches: Vec<&zipher_engine::swap::SwapToken> = tokens
+) -> anyhow::Result<&'a zumbra_engine::swap::SwapToken> {
+    let matches: Vec<&zumbra_engine::swap::SwapToken> = tokens
         .iter()
         .filter(|t| t.symbol.eq_ignore_ascii_case(symbol))
         .filter(|t| chain.map_or(true, |c| t.blockchain.eq_ignore_ascii_case(c)))
@@ -1672,11 +1672,11 @@ async fn main() -> Result<()> {
     match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         [] => {}
         ["--version" | "-V"] => {
-            println!("zipher-mcp-server {}", env!("CARGO_PKG_VERSION"));
+            println!("zumbra-mcp {}", env!("CARGO_PKG_VERSION"));
             return Ok(());
         }
         ["--help" | "-h"] => {
-            println!("Zipher MCP server {}\n\nUsage: zipher-mcp-server [--version|--help]\n\nWith no arguments, serves MCP over stdio. Configure ZIPHER_DATA_DIR,\nZIPHER_SERVER, ZIPHER_TESTNET, OWS_WALLET and OWS_PASSPHRASE through the environment.", env!("CARGO_PKG_VERSION"));
+            println!("Zumbra MCP server {}\n\nUsage: zumbra-mcp [--version|--help]\n\nWith no arguments, serves MCP over stdio. Configure ZUMBRA_DATA_DIR,\nZUMBRA_SERVER, ZUMBRA_TESTNET, OWS_WALLET and OWS_PASSPHRASE through the environment.", env!("CARGO_PKG_VERSION"));
             return Ok(());
         }
         _ => anyhow::bail!("Unsupported arguments. Use --help for usage."),
@@ -1696,15 +1696,15 @@ async fn main() -> Result<()> {
         tracing::info!("Process hardened: ptrace blocked");
     }
 
-    let testnet = std::env::var("ZIPHER_TESTNET").unwrap_or_default() == "1";
+    let testnet = std::env::var("ZUMBRA_TESTNET").unwrap_or_default() == "1";
     let network = if testnet { Network::TestNetwork } else { Network::MainNetwork };
     let default_server = if testnet { DEFAULT_TESTNET_SERVER } else { DEFAULT_MAINNET_SERVER };
-    let server_url = std::env::var("ZIPHER_SERVER").unwrap_or_else(|_| default_server.to_string());
+    let server_url = std::env::var("ZUMBRA_SERVER").unwrap_or_else(|_| default_server.to_string());
 
     let net_suffix = if testnet { "testnet" } else { "mainnet" };
-    let data_dir = std::env::var("ZIPHER_DATA_DIR").unwrap_or_else(|_| {
+    let data_dir = std::env::var("ZUMBRA_DATA_DIR").unwrap_or_else(|_| {
         let home = dirs::home_dir().expect("Cannot determine home directory");
-        home.join(".zipher").join(net_suffix).to_string_lossy().to_string()
+        home.join(".zumbra").join(net_suffix).to_string_lossy().to_string()
     });
 
     std::fs::create_dir_all(&data_dir)?;
@@ -1714,18 +1714,18 @@ async fn main() -> Result<()> {
 
     tracing::info!("Seed source: {}", seed_source.label());
 
-    let db_path = std::path::PathBuf::from(&data_dir).join("zipher-data.sqlite");
+    let db_path = std::path::PathBuf::from(&data_dir).join("zumbra-data.sqlite");
     if db_path.exists() {
         tracing::info!("Opening wallet from {}", data_dir);
-        zipher_engine::wallet::open(&data_dir, &server_url, network, None).await?;
+        zumbra_engine::wallet::open(&data_dir, &server_url, network, None).await?;
 
         tracing::info!("Starting background sync");
-        zipher_engine::sync::start().await?;
+        zumbra_engine::sync::start().await?;
     } else {
         tracing::warn!("No wallet found in {}. Read-only tools will return errors. Create a wallet first.", data_dir);
     }
 
-    let server = ZipherMcpServer {
+    let server = ZumbraMcpServer {
         data_dir: data_dir.clone(),
         seed: Arc::new(RwLock::new(seed)),
         locked: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -1734,16 +1734,16 @@ async fn main() -> Result<()> {
         reviewed_send: Arc::new(tokio::sync::Mutex::new(None)),
     };
 
-    tracing::info!("Zipher MCP server starting on stdio (data_dir={})", data_dir);
+    tracing::info!("Zumbra MCP server starting on stdio (data_dir={})", data_dir);
 
     let transport = rmcp::transport::io::stdio();
     let server_handle = server.serve(transport).await?;
     server_handle.waiting().await?;
 
-    zipher_engine::sync::stop().await;
-    zipher_engine::wallet::close().await;
+    zumbra_engine::sync::stop().await;
+    zumbra_engine::wallet::close().await;
 
-    tracing::info!("Zipher MCP server shut down");
+    tracing::info!("Zumbra MCP server shut down");
     Ok(())
 }
 
@@ -1761,7 +1761,7 @@ fn resolve_seed(_data_dir: &str) -> (Option<SecretString>, SeedSource) {
 
     tracing::warn!(
         "No OWS mnemonic wallet available. Signing tools will fail. \
-         Run `zipher-cli wallet init`, or set OWS_WALLET / OWS_PASSPHRASE."
+         Run `zumbra wallet init`, or set OWS_WALLET / OWS_PASSPHRASE."
     );
     (None, SeedSource::None)
 }
@@ -1771,9 +1771,9 @@ mod security_tests {
     use super::*;
     #[tokio::test]
     async fn replaced_proposal_cannot_be_confirmed_or_consumed() {
-        let dir = std::env::temp_dir().join(format!("zipher-mcp-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("zumbra-mcp-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
-        let server = ZipherMcpServer {
+        let server = ZumbraMcpServer {
             data_dir: dir.to_str().unwrap().to_string(),
             seed: Arc::new(RwLock::new(Some(SecretString::new("dummy-test-secret".into())))),
             locked: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -1796,7 +1796,7 @@ mod security_tests {
 
     #[test]
     fn agent_cannot_invoke_operator_or_unbounded_signing_tools() {
-        let tools = ZipherMcpServer::tool_router().list_all();
+        let tools = ZumbraMcpServer::tool_router().list_all();
         for name in ["wallet_unlock", "approve_send", "polymarket_bet"] {
             assert!(!tools.iter().any(|t| t.name == name), "unsafe tool exposed: {name}");
         }

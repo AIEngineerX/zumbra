@@ -37,7 +37,7 @@ fn payment_required_body(pay_to: &str, network: &str, price: u64, path: &str) ->
         "x402Version": 2,
         "resource": {
             "url": path,
-            "description": "Zipher agent API — pay-per-call with shielded ZEC"
+            "description": "Zumbra agent API — pay-per-call with shielded ZEC"
         },
         "accepts": [{
             "scheme": "exact",
@@ -111,7 +111,7 @@ async fn verify_payment(
                 "Demo mode: accepting payment {} without verification",
                 &txid[..16]
             );
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &state.data_dir,
                 "serve_payment_demo",
                 None,
@@ -154,7 +154,7 @@ async fn verify_payment(
         ));
     }
 
-    zipher_engine::audit::log_event(
+    zumbra_engine::audit::log_event(
         &state.data_dir,
         "serve_payment_verified",
         None,
@@ -198,7 +198,7 @@ async fn research_handler(
 
     let limit = query.limit.unwrap_or(5).min(10);
 
-    match zipher_engine::research::search_news(&query.topic, limit).await {
+    match zumbra_engine::research::search_news(&query.topic, limit).await {
         Ok(report) => Json(serde_json::json!({
             "status": "ok",
             "report": report
@@ -219,7 +219,7 @@ async fn research_handler(
 async fn health_handler() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "ok",
-        "service": "zipher-agent-api",
+        "service": "zumbra-agent-api",
         "protocol": "x402",
         "version": env!("CARGO_PKG_VERSION")
     }))
@@ -244,10 +244,10 @@ pub async fn cmd_serve(
         "zcash:mainnet"
     };
 
-    let pay_to = match zipher_engine::query::get_addresses().await {
+    let pay_to = match zumbra_engine::query::get_addresses().await {
         Ok(addrs) if !addrs.is_empty() => addrs[0].address.clone(),
         _ => {
-            eprintln!("Error: No wallet address available. Create a wallet first: zipher-cli wallet init");
+            eprintln!("Error: No wallet address available. Create a wallet first: zumbra wallet init");
             std::process::exit(1);
         }
     };
@@ -260,7 +260,7 @@ pub async fn cmd_serve(
         eprintln!("any client sending a syntactically valid PAYMENT-SIGNATURE header would be served");
         eprintln!("for free. To run in unverified demo mode anyway (e.g. local testing), pass:");
         eprintln!();
-        eprintln!("    zipher-cli serve --demo-accept-unverified");
+        eprintln!("    zumbra serve --demo-accept-unverified");
         eprintln!();
         std::process::exit(1);
     }
@@ -292,7 +292,7 @@ pub async fn cmd_serve(
         .with_state(state);
 
     let price_zec = price_zatoshis as f64 / 1e8;
-    println!("Zipher Agent API");
+    println!("Zumbra Agent API");
     println!("  Listening:  http://{}:{}", listen, port);
     if listen == "127.0.0.1" {
         println!("              (localhost only — pass --listen 0.0.0.0 to expose)");

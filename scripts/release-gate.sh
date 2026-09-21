@@ -19,9 +19,9 @@ bad=$(git ls-files | grep -iE '(^|/)\.env($|\.)|\.pem$|\.p12$|\.jks$|\.keystore$
 if command -v cargo >/dev/null; then
   ( cd rust
     cargo fmt --all --check || fail "rustfmt"
-    cargo clippy --locked --workspace --exclude rust_lib_zipher --all-targets -- -D warnings || fail "clippy"
+    cargo clippy --locked --workspace --exclude rust_lib_zumbra --all-targets -- -D warnings || fail "clippy"
     if command -v cargo-deny >/dev/null; then cargo deny check || fail "cargo deny"; else echo "NOTICE: cargo-deny not installed; CI runs it."; fi
-    cargo test --locked --workspace --exclude rust_lib_zipher || fail "cargo test"
+    cargo test --locked --workspace --exclude rust_lib_zumbra || fail "cargo test"
   )
 else
   echo "NOTICE: cargo is not installed on this machine. Rust checks were NOT run. CI runs them."

@@ -2,7 +2,7 @@
 
 Production target: `frost.atmospherelabs.dev`
 
-Zipher uses the Zcash Foundation `frostd` relay for FROST DKG and signing
+Zumbra uses the Zcash Foundation `frostd` relay for FROST DKG and signing
 message transport. The relay is intentionally dumb: clients authenticate to the
 server, but FROST protocol messages must be end-to-end encrypted by clients.
 

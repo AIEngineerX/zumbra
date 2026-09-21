@@ -1,5 +1,5 @@
 [Unit]
-Description=ZF FROST relay server for Zipher threshold wallets
+Description=ZF FROST relay server for Zumbra threshold wallets
 After=network-online.target
 Wants=network-online.target
 

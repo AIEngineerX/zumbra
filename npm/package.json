@@ -1,13 +1,13 @@
 {
-  "name": "@cipherpay/zipher-cli",
+  "name": "@cipherpay/zumbra",
   "version": "0.3.0",
   "description": "Headless Zcash light wallet for AI agents \u2014 CLI + MCP server",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/atmospherelabs-dev/zipher-app"
+    "url": "https://github.com/atmospherelabs-dev/zumbra-app"
   },
-  "homepage": "https://zipher.app",
+  "homepage": "https://zumbra.app",
   "keywords": [
     "zcash",
     "wallet",
@@ -20,8 +20,8 @@
     "shielded"
   ],
   "bin": {
-    "zipher": "./bin/zipher",
-    "zipher-mcp-server": "./bin/zipher-mcp-server"
+    "zumbra": "./bin/zumbra",
+    "zumbra-mcp": "./bin/zumbra-mcp"
   },
   "scripts": {
     "postinstall": "node install.js",

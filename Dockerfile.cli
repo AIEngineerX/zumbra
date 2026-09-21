@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /build
 COPY rust/ ./
 
-RUN cargo build --release -p zipher-cli -p zipher-mcp-server
+RUN cargo build --release -p zumbra -p zumbra-mcp
 
 # --- Runtime ---
 FROM debian:bookworm-slim AS base
@@ -19,20 +19,20 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/zipher-cli /usr/local/bin/
-COPY --from=builder /build/target/release/zipher-mcp-server /usr/local/bin/
+COPY --from=builder /build/target/release/zumbra /usr/local/bin/
+COPY --from=builder /build/target/release/zumbra-mcp /usr/local/bin/
 
-RUN mkdir -p /root/.zipher/mainnet /root/.zipher/testnet
+RUN mkdir -p /root/.zumbra/mainnet /root/.zumbra/testnet
 
 # --- CLI image ---
 FROM base AS cli
 
-ENV ZIPHER_DATA_DIR=/root/.zipher/mainnet
-ENTRYPOINT ["zipher-cli"]
+ENV ZUMBRA_DATA_DIR=/root/.zumbra/mainnet
+ENTRYPOINT ["zumbra"]
 
 # --- MCP server image ---
 FROM base AS mcp-server
 
-ENV ZIPHER_DATA_DIR=/root/.zipher/mainnet
+ENV ZUMBRA_DATA_DIR=/root/.zumbra/mainnet
 EXPOSE 3000
-ENTRYPOINT ["zipher-mcp-server"]
+ENTRYPOINT ["zumbra-mcp"]

@@ -34,7 +34,7 @@ use zcash_client_sqlite::WalletDb;
 use zcash_protocol::consensus::{BlockHeight, Network};
 
 lazy_static::lazy_static! {
-    pub(crate) static ref ENGINE: Mutex<Option<ZipherEngine>> = Mutex::new(None);
+    pub(crate) static ref ENGINE: Mutex<Option<ZumbraEngine>> = Mutex::new(None);
 }
 
 /// Core wallet engine built on zcash_client_sqlite + zcash_client_backend.
@@ -42,7 +42,7 @@ lazy_static::lazy_static! {
 /// Stores database paths and network config. WalletDb instances are created
 /// on demand from the stored path — this avoids complex generic type parameters
 /// in the singleton while keeping SQLite connections short-lived and safe.
-pub struct ZipherEngine {
+pub struct ZumbraEngine {
     pub(crate) db_data_path: PathBuf,
     pub(crate) params: Network,
     pub(crate) server_url: String,
@@ -52,7 +52,7 @@ pub struct ZipherEngine {
     pub(crate) tor_client: Option<zcash_client_backend::tor::Client>,
 }
 
-impl ZipherEngine {
+impl ZumbraEngine {
     /// A requested private route must never silently fall back to clearnet.
     pub(crate) fn tor_transport(&self) -> Result<Option<zcash_client_backend::tor::Client>> {
         if self.tor_required && self.tor_client.is_none() {
@@ -65,8 +65,8 @@ impl ZipherEngine {
 pub(crate) fn db_paths(data_dir: &str) -> (PathBuf, PathBuf) {
     let base = PathBuf::from(data_dir);
     (
-        base.join("zipher-data.sqlite"),
-        base.join("zipher-cache.sqlite"),
+        base.join("zumbra-data.sqlite"),
+        base.join("zumbra-cache.sqlite"),
     )
 }
 

@@ -9,7 +9,7 @@ use zcash_client_sqlite::wallet::init::init_wallet_db;
 use zcash_protocol::consensus::{BlockHeight, Network};
 
 use super::vault::Vault;
-use super::{db_paths, migrate_to_encrypted, open_wallet_db, ZipherEngine, ENGINE};
+use super::{db_paths, migrate_to_encrypted, open_wallet_db, ZumbraEngine, ENGINE};
 
 // ---------------------------------------------------------------------------
 // lightwalletd gRPC helpers
@@ -222,7 +222,7 @@ async fn activate_engine(
     birthday_height: u64,
     db_cipher_key: Option<String>,
 ) {
-    *ENGINE.lock().await = Some(ZipherEngine {
+    *ENGINE.lock().await = Some(ZumbraEngine {
         db_data_path,
         params,
         server_url: server_url.to_string(),
@@ -402,7 +402,7 @@ pub async fn open(
         .map_err(|e| anyhow::anyhow!("get_account_birthday error: {:?}", e))?;
     tracing::debug!("opened wallet, birthday={}", u32::from(birthday));
 
-    *ENGINE.lock().await = Some(ZipherEngine {
+    *ENGINE.lock().await = Some(ZumbraEngine {
         db_data_path,
         params,
         server_url: server_url.to_string(),

@@ -145,5 +145,5 @@
      "cfg(live_network_tests)",
  ]
 +
-+[dependencies.zipher-rng-compat]
++[dependencies.zumbra-rng-compat]
 +path = "../../crates/rng-compat"

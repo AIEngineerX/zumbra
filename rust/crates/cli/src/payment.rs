@@ -37,8 +37,8 @@ pub async fn cmd_x402_propose(
     context_id: Option<String>,
 ) -> Result<()> {
     let raw = read_402_body(&body)?;
-    let req = zipher_engine::x402::parse_402_response(&raw, expected_network(cfg))?;
-    let amount = zipher_engine::x402::amount_zatoshis(&req)?;
+    let req = zumbra_engine::x402::parse_402_response(&raw, expected_network(cfg))?;
+    let amount = zumbra_engine::x402::amount_zatoshis(&req)?;
 
     crate::wallet::cmd_send_propose(cfg, req.pay_to, amount, false, None, context_id, false).await
 }
@@ -51,17 +51,17 @@ pub async fn cmd_x402_pay(
     ensure_sapling_params(&cfg.data_dir).await?;
     sync_if_needed(cfg).await?;
     let raw = read_402_body(&body)?;
-    let req = zipher_engine::x402::parse_402_response(&raw, expected_network(cfg))?;
-    let amount = zipher_engine::x402::amount_zatoshis(&req)?;
+    let req = zumbra_engine::x402::parse_402_response(&raw, expected_network(cfg))?;
+    let amount = zumbra_engine::x402::amount_zatoshis(&req)?;
     let address = req.pay_to.clone();
 
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
 
-    let daily_spent = zipher_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
+    let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
     if let Err(violation) =
-        zipher_engine::policy::check_proposal(&policy, &address, amount, &context_id, daily_spent)
+        zumbra_engine::policy::check_proposal(&policy, &address, amount, &context_id, daily_spent)
     {
-        zipher_engine::audit::log_event(
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "x402_pay",
             Some(&address),
@@ -75,8 +75,8 @@ pub async fn cmd_x402_pay(
         return Err(anyhow::anyhow!("{}", violation));
     }
 
-    if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-        zipher_engine::audit::log_event(
+    if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "x402_pay",
             Some(&address),
@@ -93,7 +93,7 @@ pub async fn cmd_x402_pay(
     auto_open(cfg).await?;
 
     let (send_amount, fee, _) =
-        zipher_engine::send::propose_send(&address, amount, None, false, false).await?;
+        zumbra_engine::send::propose_send(&address, amount, None, false, false).await?;
 
     if cfg.human {
         let zec = send_amount as f64 / 1e8;
@@ -105,10 +105,10 @@ pub async fn cmd_x402_pay(
     }
 
     let seed = read_seed(&cfg.data_dir)?;
-    let txid = match zipher_engine::send::confirm_send(&seed).await {
+    let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
-            zipher_engine::policy::record_confirm();
-            zipher_engine::audit::log_event(
+            zumbra_engine::policy::record_confirm();
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "x402_pay",
                 Some(&address),
@@ -122,7 +122,7 @@ pub async fn cmd_x402_pay(
             txid
         }
         Err(e) => {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "x402_pay",
                 Some(&address),
@@ -139,7 +139,7 @@ pub async fn cmd_x402_pay(
 
     delete_pending(&cfg.data_dir);
 
-    let payment_signature = zipher_engine::x402::build_payment_signature(&txid, &req);
+    let payment_signature = zumbra_engine::x402::build_payment_signature(&txid, &req);
 
     #[derive(Serialize)]
     struct X402PayResult {
@@ -174,7 +174,7 @@ pub async fn cmd_x402_pay(
         },
     );
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -187,7 +187,7 @@ async fn pay_with_zec(
     client: &reqwest::Client,
     url: &str,
     http_method: &str,
-    protocol: zipher_engine::payment::PaymentProtocol,
+    protocol: zumbra_engine::payment::PaymentProtocol,
     context_id: Option<String>,
 ) -> Result<()> {
     let info = protocol.info()?;
@@ -202,27 +202,27 @@ async fn pay_with_zec(
     let address = protocol.address()?;
     let amount = protocol.amount_zatoshis()?;
 
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
-    let daily_spent = zipher_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
     if let Err(violation) =
-        zipher_engine::policy::check_proposal(&policy, &address, amount, &context_id, daily_spent)
+        zumbra_engine::policy::check_proposal(&policy, &address, amount, &context_id, daily_spent)
     {
         return Err(anyhow::anyhow!("{}", violation));
     }
-    if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
+    if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
         return Err(anyhow::anyhow!("{}", violation));
     }
 
     auto_open(cfg).await?;
 
     let (send_amount, fee, _) =
-        zipher_engine::send::propose_send(&address, amount, None, false, false).await?;
+        zumbra_engine::send::propose_send(&address, amount, None, false, false).await?;
 
     let seed = read_seed(&cfg.data_dir)?;
-    let txid = match zipher_engine::send::confirm_send(&seed).await {
+    let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
-            zipher_engine::policy::record_confirm();
-            zipher_engine::audit::log_event(
+            zumbra_engine::policy::record_confirm();
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "pay",
                 Some(&address),
@@ -236,7 +236,7 @@ async fn pay_with_zec(
             txid
         }
         Err(e) => {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "pay",
                 Some(&address),
@@ -308,7 +308,7 @@ async fn pay_with_zec(
         );
     }
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -321,7 +321,7 @@ async fn pay_cross_chain(
     _client: &reqwest::Client,
     url: &str,
     http_method: &str,
-    evm_info: zipher_engine::evm_pay::EvmPaymentInfo,
+    evm_info: zumbra_engine::evm_pay::EvmPaymentInfo,
     context_id: Option<String>,
 ) -> Result<()> {
     let ows_wallet = std::env::var("OWS_WALLET").unwrap_or_else(|_| "default".to_string());
@@ -332,7 +332,7 @@ async fn pay_cross_chain(
     }
 
     // Step 1: Check if we already have enough of the target token
-    let current_balance = zipher_engine::evm_pay::get_erc20_balance(
+    let current_balance = zumbra_engine::evm_pay::get_erc20_balance(
         &evm_info.chain.rpc_url,
         &evm_info.asset_contract,
         &evm_address,
@@ -354,12 +354,12 @@ async fn pay_cross_chain(
         }
 
         // Step 2: Swap ZEC → target token via NEAR Intents
-        let swap_amount_human = zipher_engine::evm_pay::swap_amount_with_buffer(
+        let swap_amount_human = zumbra_engine::evm_pay::swap_amount_with_buffer(
             &evm_info.amount_raw,
             evm_info.decimals,
         )?;
 
-        let zec_needed = zipher_engine::evm_pay::estimate_zec_needed(
+        let zec_needed = zumbra_engine::evm_pay::estimate_zec_needed(
             &evm_info.asset_symbol,
             &evm_info.chain.near_intents_blockchain,
             swap_amount_human,
@@ -378,9 +378,9 @@ async fn pay_cross_chain(
 
         auto_open(cfg).await?;
 
-        let tokens = zipher_engine::swap::get_tokens().await?;
+        let tokens = zumbra_engine::swap::get_tokens().await?;
 
-        let zec_token = zipher_engine::swap::find_zec_token(&tokens)
+        let zec_token = zumbra_engine::swap::find_zec_token(&tokens)
             .ok_or_else(|| anyhow::anyhow!("ZEC not found in swap tokens"))?;
 
         let dest_token = tokens
@@ -398,13 +398,13 @@ async fn pay_cross_chain(
                 )
             })?;
 
-        let addresses = zipher_engine::query::get_addresses().await?;
+        let addresses = zumbra_engine::query::get_addresses().await?;
         let refund_addr = addresses
             .first()
             .map(|a| a.address.clone())
             .unwrap_or_default();
 
-        let quote = zipher_engine::swap::get_quote(
+        let quote = zumbra_engine::swap::get_quote(
             &zec_token.asset_id,
             &dest_token.asset_id,
             &zec_needed.to_string(),
@@ -423,15 +423,15 @@ async fn pay_cross_chain(
 
         let deposit_amount: u64 = quote.amount_in.parse().unwrap_or(zec_needed);
         let (send_amount, fee, _) =
-            zipher_engine::send::propose_send(&quote.deposit_address, deposit_amount, None, false, false)
+            zumbra_engine::send::propose_send(&quote.deposit_address, deposit_amount, None, false, false)
                 .await?;
 
         let seed = read_seed(&cfg.data_dir)?;
         quote.validate_for_funding(send_amount)?;
-        let swap_txid = zipher_engine::send::confirm_send(&seed).await?;
-        zipher_engine::policy::record_confirm();
+        let swap_txid = zumbra_engine::send::confirm_send(&seed).await?;
+        zumbra_engine::policy::record_confirm();
 
-        zipher_engine::audit::log_event(
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "pay_cross_chain_swap",
             Some(&quote.deposit_address),
@@ -447,14 +447,14 @@ async fn pay_cross_chain(
             eprintln!("  ZEC sent: {} (waiting for swap...)", swap_txid);
         }
 
-        zipher_engine::swap::submit_deposit(&quote.deposit_address, &swap_txid)
+        zumbra_engine::swap::submit_deposit(&quote.deposit_address, &swap_txid)
             .await
             .ok();
 
         // Wait for swap to complete
         for i in 0..30 {
             tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
-            let status = zipher_engine::swap::get_status(&quote.deposit_address).await;
+            let status = zumbra_engine::swap::get_status(&quote.deposit_address).await;
             if let Ok(s) = &status {
                 if cfg.human && i % 3 == 0 {
                     eprintln!("  Swap status: {}", s.status);
@@ -477,7 +477,7 @@ async fn pay_cross_chain(
 
         // Also check we have native gas on the EVM chain
         let native_balance =
-            zipher_engine::evm::get_native_balance(&evm_info.chain.rpc_url, &evm_address)
+            zumbra_engine::evm::get_native_balance(&evm_info.chain.rpc_url, &evm_address)
                 .await
                 .unwrap_or(0);
 
@@ -514,7 +514,7 @@ async fn pay_cross_chain(
     ])
     .await?;
 
-    zipher_engine::audit::log_event(
+    zumbra_engine::audit::log_event(
         &cfg.data_dir,
         "pay_cross_chain",
         Some(&evm_info.pay_to),
@@ -600,11 +600,11 @@ pub async fn cmd_pay(
     let body = initial_resp.text().await.unwrap_or_default();
 
     let network = expected_network(cfg);
-    let zec_protocol = zipher_engine::payment::detect_protocol(&headers, &body, network);
+    let zec_protocol = zumbra_engine::payment::detect_protocol(&headers, &body, network);
 
     match zec_protocol {
         Ok(protocol) => pay_with_zec(cfg, &client, &url, &http_method, protocol, context_id).await,
-        Err(_zec_err) => match zipher_engine::evm_pay::parse_evm_x402(&body) {
+        Err(_zec_err) => match zumbra_engine::evm_pay::parse_evm_x402(&body) {
             Ok(evm_info) => {
                 if cfg.human {
                     eprintln!(
@@ -642,8 +642,8 @@ pub async fn cmd_sweep(
     let evm_address = get_ows_evm_address(&ows_wallet).await?;
 
     let evm_chain = match chain.to_lowercase().as_str() {
-        "base" => zipher_engine::evm_pay::BASE_MAINNET,
-        "bsc" | "bnb" => zipher_engine::evm_pay::BSC_MAINNET,
+        "base" => zumbra_engine::evm_pay::BASE_MAINNET,
+        "bsc" | "bnb" => zumbra_engine::evm_pay::BSC_MAINNET,
         _ => {
             return Err(anyhow::anyhow!(
                 "Unsupported chain '{}'. Use: base, bsc",
@@ -653,7 +653,7 @@ pub async fn cmd_sweep(
     };
 
     // Find the token contract address from NEAR Intents token list
-    let tokens = zipher_engine::swap::get_tokens().await?;
+    let tokens = zumbra_engine::swap::get_tokens().await?;
     let token = tokens
         .iter()
         .find(|t| {
@@ -663,7 +663,7 @@ pub async fn cmd_sweep(
         })
         .ok_or_else(|| anyhow::anyhow!("{} on {} not found in swap tokens", token_symbol, chain))?;
 
-    let contract = zipher_engine::evm_pay::token_contract(&token_symbol, evm_chain.chain_id)
+    let contract = zumbra_engine::evm_pay::token_contract(&token_symbol, evm_chain.chain_id)
         .unwrap_or_else(|| {
             if cfg.human {
                 eprintln!("Warning: unknown token contract for {} on chain {}. Sweep may not detect balance.", token_symbol, chain);
@@ -673,7 +673,7 @@ pub async fn cmd_sweep(
 
     if !contract.is_empty() {
         let balance =
-            zipher_engine::evm_pay::get_erc20_balance(evm_chain.rpc_url, contract, &evm_address)
+            zumbra_engine::evm_pay::get_erc20_balance(evm_chain.rpc_url, contract, &evm_address)
                 .await?;
 
         let decimals = match token_symbol.to_uppercase().as_str() {
@@ -704,13 +704,13 @@ pub async fn cmd_sweep(
     ensure_sapling_params(&cfg.data_dir).await?;
     auto_open(cfg).await?;
 
-    let addresses = zipher_engine::query::get_addresses().await?;
+    let addresses = zumbra_engine::query::get_addresses().await?;
     let zec_address = addresses
         .first()
         .map(|a| a.address.clone())
         .ok_or_else(|| anyhow::anyhow!("No ZEC address available"))?;
 
-    let zec_token = zipher_engine::swap::find_zec_token(&tokens)
+    let zec_token = zumbra_engine::swap::find_zec_token(&tokens)
         .ok_or_else(|| anyhow::anyhow!("ZEC not found in swap tokens"))?;
 
     if cfg.human {
@@ -733,7 +733,7 @@ pub async fn cmd_sweep(
 
         // Get a quote for visibility
         if !contract.is_empty() {
-            let balance = zipher_engine::evm_pay::get_erc20_balance(
+            let balance = zumbra_engine::evm_pay::get_erc20_balance(
                 evm_chain.rpc_url,
                 contract,
                 &evm_address,
@@ -742,7 +742,7 @@ pub async fn cmd_sweep(
             .unwrap_or(0);
 
             if balance > 0 {
-                match zipher_engine::swap::get_quote(
+                match zumbra_engine::swap::get_quote(
                     &token.asset_id,
                     &zec_token.asset_id,
                     &balance.to_string(),
@@ -769,8 +769,8 @@ pub async fn cmd_sweep(
     }
 
     println!(
-        "Sweep quote displayed. Execute with: zipher-cli swap execute --to ZEC --chain zcash ..."
+        "Sweep quote displayed. Execute with: zumbra swap execute --to ZEC --chain zcash ..."
     );
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }

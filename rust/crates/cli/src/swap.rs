@@ -5,7 +5,7 @@ use crate::helpers::*;
 use crate::{print_ok, Config};
 
 pub async fn cmd_swap_tokens(cfg: &Config) -> Result<()> {
-    let tokens = zipher_engine::swap::get_tokens().await?;
+    let tokens = zumbra_engine::swap::get_tokens().await?;
 
     #[derive(Serialize)]
     struct TokenInfo {
@@ -16,7 +16,7 @@ pub async fn cmd_swap_tokens(cfg: &Config) -> Result<()> {
         price: Option<f64>,
     }
 
-    let list: Vec<TokenInfo> = zipher_engine::swap::swappable_tokens(&tokens)
+    let list: Vec<TokenInfo> = zumbra_engine::swap::swappable_tokens(&tokens)
         .into_iter()
         .map(|t| TokenInfo {
             asset_id: t.asset_id.clone(),
@@ -27,7 +27,7 @@ pub async fn cmd_swap_tokens(cfg: &Config) -> Result<()> {
         })
         .collect();
 
-    let zec = zipher_engine::swap::find_zec_token(&tokens);
+    let zec = zumbra_engine::swap::find_zec_token(&tokens);
 
     #[derive(Serialize)]
     struct TokensResult {
@@ -69,21 +69,21 @@ pub async fn cmd_swap_quote(
     recipient: String,
     slippage: u32,
 ) -> Result<()> {
-    let tokens = zipher_engine::swap::get_tokens().await?;
+    let tokens = zumbra_engine::swap::get_tokens().await?;
 
-    let zec = zipher_engine::swap::find_zec_token(&tokens)
+    let zec = zumbra_engine::swap::find_zec_token(&tokens)
         .ok_or_else(|| anyhow::anyhow!("ZEC not found in Near Intents token list"))?;
 
     let dest = find_destination_token(&tokens, &to_symbol, chain.as_deref())?;
 
     auto_open(cfg).await?;
-    let addresses = zipher_engine::query::get_addresses().await?;
+    let addresses = zumbra_engine::query::get_addresses().await?;
     let refund_addr = addresses
         .first()
         .map(|a| a.address.clone())
         .unwrap_or_default();
 
-    let quote = zipher_engine::swap::get_quote(
+    let quote = zumbra_engine::swap::get_quote(
         &zec.asset_id,
         &dest.asset_id,
         &amount.to_string(),
@@ -107,12 +107,12 @@ pub async fn cmd_swap_quote(
         println!("  Deadline: {}", q.deadline);
         println!();
         println!(
-            "To execute: zipher-cli swap execute --to {} --amount {} --recipient {}",
+            "To execute: zumbra swap execute --to {} --amount {} --recipient {}",
             to_symbol, amount, recipient
         );
     });
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
@@ -128,19 +128,19 @@ pub async fn cmd_swap_execute(
     ensure_sapling_params(&cfg.data_dir).await?;
     sync_if_needed(cfg).await?;
 
-    let tokens = zipher_engine::swap::get_tokens().await?;
-    let zec = zipher_engine::swap::find_zec_token(&tokens)
+    let tokens = zumbra_engine::swap::get_tokens().await?;
+    let zec = zumbra_engine::swap::find_zec_token(&tokens)
         .ok_or_else(|| anyhow::anyhow!("ZEC not found in Near Intents token list"))?;
     let dest = find_destination_token(&tokens, &to_symbol, chain.as_deref())?;
 
     auto_open(cfg).await?;
-    let addresses = zipher_engine::query::get_addresses().await?;
+    let addresses = zumbra_engine::query::get_addresses().await?;
     let refund_addr = addresses
         .first()
         .map(|a| a.address.clone())
         .unwrap_or_default();
 
-    let quote = zipher_engine::swap::get_quote(
+    let quote = zumbra_engine::swap::get_quote(
         &zec.asset_id,
         &dest.asset_id,
         &amount.to_string(),
@@ -161,16 +161,16 @@ pub async fn cmd_swap_execute(
         );
     }
 
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
-    let daily_spent = zipher_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
-    if let Err(violation) = zipher_engine::policy::check_proposal(
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
+    if let Err(violation) = zumbra_engine::policy::check_proposal(
         &policy,
         &quote.deposit_address,
         amount,
         &context_id,
         daily_spent,
     ) {
-        zipher_engine::audit::log_event(
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "swap_execute",
             Some(&quote.deposit_address),
@@ -183,8 +183,8 @@ pub async fn cmd_swap_execute(
         .ok();
         return Err(anyhow::anyhow!("{}", violation));
     }
-    if let Err(violation) = zipher_engine::policy::check_rate_limit(&policy) {
-        zipher_engine::audit::log_event(
+    if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
+        zumbra_engine::audit::log_event(
             &cfg.data_dir,
             "swap_execute",
             Some(&quote.deposit_address),
@@ -199,14 +199,14 @@ pub async fn cmd_swap_execute(
     }
 
     let (send_amount, fee, _) =
-        zipher_engine::send::propose_send(&quote.deposit_address, amount, None, false, false).await?;
+        zumbra_engine::send::propose_send(&quote.deposit_address, amount, None, false, false).await?;
 
     let seed = read_seed(&cfg.data_dir)?;
     quote.validate_for_funding(send_amount)?;
-    let txid = match zipher_engine::send::confirm_send(&seed).await {
+    let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
-            zipher_engine::policy::record_confirm();
-            zipher_engine::audit::log_event(
+            zumbra_engine::policy::record_confirm();
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "swap_execute",
                 Some(&quote.deposit_address),
@@ -220,7 +220,7 @@ pub async fn cmd_swap_execute(
             txid
         }
         Err(e) => {
-            zipher_engine::audit::log_event(
+            zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "swap_execute",
                 Some(&quote.deposit_address),
@@ -237,7 +237,7 @@ pub async fn cmd_swap_execute(
 
     delete_pending(&cfg.data_dir);
 
-    if let Err(e) = zipher_engine::swap::submit_deposit(&txid, &quote.deposit_address).await {
+    if let Err(e) = zumbra_engine::swap::submit_deposit(&txid, &quote.deposit_address).await {
         if cfg.human {
             eprintln!(
                 "Warning: deposit submit notification failed: {}. Swap may still proceed.",
@@ -283,18 +283,18 @@ pub async fn cmd_swap_execute(
             println!("  Fee:          {} zat", r.fee);
             println!();
             println!(
-                "Check status: zipher-cli swap status --deposit-address {}",
+                "Check status: zumbra swap status --deposit-address {}",
                 r.deposit_address
             );
         },
     );
 
-    zipher_engine::wallet::close().await;
+    zumbra_engine::wallet::close().await;
     Ok(())
 }
 
 pub async fn cmd_swap_status(_cfg: &Config, deposit_address: String) -> Result<()> {
-    let status = zipher_engine::swap::get_status(&deposit_address).await?;
+    let status = zumbra_engine::swap::get_status(&deposit_address).await?;
 
     print_ok(&status, _cfg.human, |s| {
         println!("Swap status: {}", s.status);
@@ -309,11 +309,11 @@ pub async fn cmd_swap_status(_cfg: &Config, deposit_address: String) -> Result<(
 }
 
 pub fn find_destination_token<'a>(
-    tokens: &'a [zipher_engine::swap::SwapToken],
+    tokens: &'a [zumbra_engine::swap::SwapToken],
     symbol: &str,
     chain: Option<&str>,
-) -> Result<&'a zipher_engine::swap::SwapToken> {
-    let matches: Vec<&zipher_engine::swap::SwapToken> = tokens
+) -> Result<&'a zumbra_engine::swap::SwapToken> {
+    let matches: Vec<&zumbra_engine::swap::SwapToken> = tokens
         .iter()
         .filter(|t| t.symbol.eq_ignore_ascii_case(symbol))
         .filter(|t| chain.map_or(true, |c| t.blockchain.eq_ignore_ascii_case(c)))

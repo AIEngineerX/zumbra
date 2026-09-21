@@ -4,11 +4,11 @@ set -euo pipefail
 # Check wallet sync status and balance.
 # Exits non-zero if wallet is not synced or has no balance.
 
-ZIPHER_CLI="${ZIPHER_CLI:-zipher-cli}"
-FLAGS="${ZIPHER_FLAGS:-}"
+ZUMBRA_CLI="${ZUMBRA_CLI:-zumbra}"
+FLAGS="${ZUMBRA_FLAGS:-}"
 
 echo "=== Sync Status ==="
-sync_json=$($ZIPHER_CLI $FLAGS sync status 2>/dev/null) || {
+sync_json=$($ZUMBRA_CLI $FLAGS sync status 2>/dev/null) || {
     echo "ERROR: Cannot read sync status. Is the wallet initialized?"
     exit 1
 }
@@ -25,7 +25,7 @@ print(f\"  Birthday: {s['birthday']}\")
 
 echo ""
 echo "=== Balance ==="
-bal_json=$($ZIPHER_CLI $FLAGS balance 2>/dev/null) || {
+bal_json=$($ZUMBRA_CLI $FLAGS balance 2>/dev/null) || {
     echo "ERROR: Cannot read balance."
     exit 1
 }

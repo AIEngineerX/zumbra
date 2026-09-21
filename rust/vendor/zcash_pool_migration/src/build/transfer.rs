@@ -116,7 +116,7 @@ where
         .map_err(|e| BuildError::Build(format!("transfer: add ironwood output: {e}")))?;
 
     let build_result = builder
-        .build_for_pczt(zipher_rng_compat::From06(rng), &Zip317FeeRule::standard())
+        .build_for_pczt(zumbra_rng_compat::From06(rng), &Zip317FeeRule::standard())
         .map_err(|e| BuildError::Build(format!("transfer: build: {e}")))?;
 
     finalize_pczt(params, build_result.pczt_parts, account_derivation)

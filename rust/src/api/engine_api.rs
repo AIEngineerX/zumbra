@@ -1,4 +1,4 @@
-//! FFI bindings for the Zipher wallet engine built on zcash_client_backend.
+//! FFI bindings for the Zumbra wallet engine built on zcash_client_backend.
 
 use anyhow::Result;
 use std::collections::BTreeMap;
@@ -565,8 +565,8 @@ pub struct EngineFrostDkgRound1Result {
     pub round1_package: String,
 }
 
-impl From<zipher_engine::frost::FrostDkgRound1Result> for EngineFrostDkgRound1Result {
-    fn from(v: zipher_engine::frost::FrostDkgRound1Result) -> Self {
+impl From<zumbra_engine::frost::FrostDkgRound1Result> for EngineFrostDkgRound1Result {
+    fn from(v: zumbra_engine::frost::FrostDkgRound1Result) -> Self {
         Self {
             participant_id: v.participant_id,
             secret_package: v.secret_package,
@@ -601,8 +601,8 @@ pub struct EngineFrostDkgRound2Result {
     pub round2_packages: Vec<EngineFrostParticipantPackage>,
 }
 
-impl From<zipher_engine::frost::FrostDkgRound2Result> for EngineFrostDkgRound2Result {
-    fn from(v: zipher_engine::frost::FrostDkgRound2Result) -> Self {
+impl From<zumbra_engine::frost::FrostDkgRound2Result> for EngineFrostDkgRound2Result {
+    fn from(v: zumbra_engine::frost::FrostDkgRound2Result) -> Self {
         Self {
             secret_package: v.secret_package,
             round2_packages: packages_from_map(v.round2_packages),
@@ -617,8 +617,8 @@ pub struct EngineFrostDkgCompleteResult {
     pub group_public_key_hex: String,
 }
 
-impl From<zipher_engine::frost::FrostDkgCompleteResult> for EngineFrostDkgCompleteResult {
-    fn from(v: zipher_engine::frost::FrostDkgCompleteResult) -> Self {
+impl From<zumbra_engine::frost::FrostDkgCompleteResult> for EngineFrostDkgCompleteResult {
+    fn from(v: zumbra_engine::frost::FrostDkgCompleteResult) -> Self {
         Self {
             participant_id: v.participant_id,
             key_package: v.key_package,
@@ -634,8 +634,8 @@ pub struct EngineFrostSigningRound1Result {
     pub signing_commitments: String,
 }
 
-impl From<zipher_engine::frost::FrostSigningRound1Result> for EngineFrostSigningRound1Result {
-    fn from(v: zipher_engine::frost::FrostSigningRound1Result) -> Self {
+impl From<zumbra_engine::frost::FrostSigningRound1Result> for EngineFrostSigningRound1Result {
+    fn from(v: zumbra_engine::frost::FrostSigningRound1Result) -> Self {
         Self {
             participant_id: v.participant_id,
             signing_nonces: v.signing_nonces,
@@ -649,8 +649,8 @@ pub struct EngineFrostRandomizerResult {
     pub randomizer_point_hex: String,
 }
 
-impl From<zipher_engine::frost::FrostRandomizerResult> for EngineFrostRandomizerResult {
-    fn from(v: zipher_engine::frost::FrostRandomizerResult) -> Self {
+impl From<zumbra_engine::frost::FrostRandomizerResult> for EngineFrostRandomizerResult {
+    fn from(v: zumbra_engine::frost::FrostRandomizerResult) -> Self {
         Self {
             randomizer_hex: v.randomizer_hex,
             randomizer_point_hex: v.randomizer_point_hex,
@@ -662,8 +662,8 @@ pub struct EngineFrostAggregateResult {
     pub signature_hex: String,
 }
 
-impl From<zipher_engine::frost::FrostAggregateResult> for EngineFrostAggregateResult {
-    fn from(v: zipher_engine::frost::FrostAggregateResult) -> Self {
+impl From<zumbra_engine::frost::FrostAggregateResult> for EngineFrostAggregateResult {
+    fn from(v: zumbra_engine::frost::FrostAggregateResult) -> Self {
         Self {
             signature_hex: v.signature_hex,
         }
@@ -682,8 +682,8 @@ pub struct EngineFrostRelayIdentity {
     pub public_key_hex: String,
 }
 
-impl From<zipher_engine::frost::FrostRelayIdentity> for EngineFrostRelayIdentity {
-    fn from(v: zipher_engine::frost::FrostRelayIdentity) -> Self {
+impl From<zumbra_engine::frost::FrostRelayIdentity> for EngineFrostRelayIdentity {
+    fn from(v: zumbra_engine::frost::FrostRelayIdentity) -> Self {
         Self {
             private_key_hex: v.private_key_hex,
             public_key_hex: v.public_key_hex,
@@ -696,8 +696,8 @@ pub struct EngineFrostRelayLoginProof {
     pub signature_hex: String,
 }
 
-impl From<zipher_engine::frost::FrostRelayLoginProof> for EngineFrostRelayLoginProof {
-    fn from(v: zipher_engine::frost::FrostRelayLoginProof) -> Self {
+impl From<zumbra_engine::frost::FrostRelayLoginProof> for EngineFrostRelayLoginProof {
+    fn from(v: zumbra_engine::frost::FrostRelayLoginProof) -> Self {
         Self {
             pubkey_hex: v.pubkey_hex,
             signature_hex: v.signature_hex,
@@ -705,8 +705,8 @@ impl From<zipher_engine::frost::FrostRelayLoginProof> for EngineFrostRelayLoginP
     }
 }
 
-impl From<zipher_engine::frost::FrostWalletView> for EngineFrostWalletView {
-    fn from(v: zipher_engine::frost::FrostWalletView) -> Self {
+impl From<zumbra_engine::frost::FrostWalletView> for EngineFrostWalletView {
+    fn from(v: zumbra_engine::frost::FrostWalletView) -> Self {
         Self {
             ufvk: v.ufvk,
             address: v.address,
@@ -727,8 +727,8 @@ pub struct EngineFrostPcztSigningRequest {
     pub orchard_actions: Vec<EngineFrostPcztActionRequest>,
 }
 
-impl From<zipher_engine::frost::FrostPcztSigningRequest> for EngineFrostPcztSigningRequest {
-    fn from(v: zipher_engine::frost::FrostPcztSigningRequest) -> Self {
+impl From<zumbra_engine::frost::FrostPcztSigningRequest> for EngineFrostPcztSigningRequest {
+    fn from(v: zumbra_engine::frost::FrostPcztSigningRequest) -> Self {
         Self {
             orchard_actions: v
                 .orchard_actions
@@ -754,7 +754,7 @@ pub fn engine_frost_dkg_init(
     max_signers: u16,
     min_signers: u16,
 ) -> Result<EngineFrostDkgRound1Result> {
-    Ok(zipher_engine::frost::frost_dkg_init(participant_id, max_signers, min_signers)?.into())
+    Ok(zumbra_engine::frost::frost_dkg_init(participant_id, max_signers, min_signers)?.into())
 }
 
 pub fn engine_frost_dkg_round2(
@@ -762,7 +762,7 @@ pub fn engine_frost_dkg_round2(
     round1_packages: Vec<EngineFrostParticipantPackage>,
 ) -> Result<EngineFrostDkgRound2Result> {
     Ok(
-        zipher_engine::frost::frost_dkg_round2(secret_package, packages_to_map(round1_packages))?
+        zumbra_engine::frost::frost_dkg_round2(secret_package, packages_to_map(round1_packages))?
             .into(),
     )
 }
@@ -772,7 +772,7 @@ pub fn engine_frost_dkg_round3(
     round1_packages: Vec<EngineFrostParticipantPackage>,
     round2_packages: Vec<EngineFrostParticipantPackage>,
 ) -> Result<EngineFrostDkgCompleteResult> {
-    Ok(zipher_engine::frost::frost_dkg_round3(
+    Ok(zumbra_engine::frost::frost_dkg_round3(
         secret_package,
         packages_to_map(round1_packages),
         packages_to_map(round2_packages),
@@ -781,20 +781,20 @@ pub fn engine_frost_dkg_round3(
 }
 
 pub fn engine_frost_sign_round1(key_package: String) -> Result<EngineFrostSigningRound1Result> {
-    Ok(zipher_engine::frost::frost_sign_round1(key_package)?.into())
+    Ok(zumbra_engine::frost::frost_sign_round1(key_package)?.into())
 }
 
 pub fn engine_frost_create_signing_package(
     message_hex: String,
     commitments: Vec<EngineFrostParticipantPackage>,
 ) -> Result<String> {
-    zipher_engine::frost::frost_create_signing_package(message_hex, packages_to_map(commitments))
+    zumbra_engine::frost::frost_create_signing_package(message_hex, packages_to_map(commitments))
 }
 
 pub fn engine_frost_create_randomizer(
     public_key_package: String,
 ) -> Result<EngineFrostRandomizerResult> {
-    Ok(zipher_engine::frost::frost_create_randomizer(public_key_package)?.into())
+    Ok(zumbra_engine::frost::frost_create_randomizer(public_key_package)?.into())
 }
 
 /// Sign using the scalar randomizer exchanged over the encrypted signing channel.
@@ -804,7 +804,7 @@ pub fn engine_frost_sign_round2(
     key_package: String,
     randomizer_hex: String,
 ) -> Result<String> {
-    zipher_engine::frost::frost_sign_round2(
+    zumbra_engine::frost::frost_sign_round2(
         signing_package,
         signing_nonces,
         key_package,
@@ -818,7 +818,7 @@ pub fn engine_frost_aggregate(
     public_key_package: String,
     randomizer_hex: String,
 ) -> Result<EngineFrostAggregateResult> {
-    Ok(zipher_engine::frost::frost_aggregate(
+    Ok(zumbra_engine::frost::frost_aggregate(
         signing_package,
         packages_to_map(signature_shares),
         public_key_package,
@@ -830,7 +830,7 @@ pub fn engine_frost_aggregate(
 pub fn engine_frost_pczt_signing_request(
     pczt_bytes: Vec<u8>,
 ) -> Result<EngineFrostPcztSigningRequest> {
-    Ok(zipher_engine::frost::frost_pczt_signing_request(pczt_bytes)?.into())
+    Ok(zumbra_engine::frost::frost_pczt_signing_request(pczt_bytes)?.into())
 }
 
 pub fn engine_frost_pczt_apply_signatures(
@@ -841,22 +841,22 @@ pub fn engine_frost_pczt_apply_signatures(
         .into_iter()
         .map(|s| (s.action_index as usize, s.signature_hex))
         .collect();
-    zipher_engine::frost::frost_pczt_apply_signatures(pczt_bytes, signatures)
+    zumbra_engine::frost::frost_pczt_apply_signatures(pczt_bytes, signatures)
 }
 
 pub fn engine_frost_derive_ufvk(group_public_key_hex: String) -> Result<String> {
-    zipher_engine::frost::frost_derive_ufvk(group_public_key_hex)
+    zumbra_engine::frost::frost_derive_ufvk(group_public_key_hex)
 }
 
 pub fn engine_frost_key_refresh(key_package: String, new_signer_count: u16) -> Result<String> {
-    zipher_engine::frost::frost_key_refresh(key_package, new_signer_count)
+    zumbra_engine::frost::frost_key_refresh(key_package, new_signer_count)
 }
 
 pub fn engine_frost_create_view_from_group_key(
     group_public_key_hex: String,
     chain_type: ChainType,
 ) -> Result<EngineFrostWalletView> {
-    Ok(zipher_engine::frost::frost_create_view_from_group_key(
+    Ok(zumbra_engine::frost::frost_create_view_from_group_key(
         group_public_key_hex,
         to_network(chain_type),
     )?
@@ -864,7 +864,7 @@ pub fn engine_frost_create_view_from_group_key(
 }
 
 pub fn engine_frost_relay_generate_identity() -> Result<EngineFrostRelayIdentity> {
-    Ok(zipher_engine::frost::frost_relay_generate_identity()?.into())
+    Ok(zumbra_engine::frost::frost_relay_generate_identity()?.into())
 }
 
 pub fn engine_frost_relay_sign_challenge(
@@ -872,7 +872,7 @@ pub fn engine_frost_relay_sign_challenge(
     public_key_hex: String,
     challenge: String,
 ) -> Result<EngineFrostRelayLoginProof> {
-    Ok(zipher_engine::frost::frost_relay_sign_challenge(
+    Ok(zumbra_engine::frost::frost_relay_sign_challenge(
         private_key_hex,
         public_key_hex,
         challenge,
@@ -885,7 +885,7 @@ pub fn engine_frost_relay_encrypt(
     recipient_public_key_hex: String,
     message_hex: String,
 ) -> Result<String> {
-    zipher_engine::frost::frost_relay_encrypt(
+    zumbra_engine::frost::frost_relay_encrypt(
         sender_private_key_hex,
         recipient_public_key_hex,
         message_hex,
@@ -897,7 +897,7 @@ pub fn engine_frost_relay_decrypt(
     sender_public_key_hex: String,
     encrypted_hex: String,
 ) -> Result<String> {
-    zipher_engine::frost::frost_relay_decrypt(
+    zumbra_engine::frost::frost_relay_decrypt(
         recipient_private_key_hex,
         sender_public_key_hex,
         encrypted_hex,
@@ -950,8 +950,8 @@ pub struct EngineTransactionRecord {
     pub expired_unmined: bool,
 }
 
-impl From<zipher_engine::types::EngineTransactionRecord> for EngineTransactionRecord {
-    fn from(t: zipher_engine::types::EngineTransactionRecord) -> Self {
+impl From<zumbra_engine::types::EngineTransactionRecord> for EngineTransactionRecord {
+    fn from(t: zumbra_engine::types::EngineTransactionRecord) -> Self {
         Self {
             txid: t.txid,
             height: t.height,
@@ -972,7 +972,7 @@ impl From<zipher_engine::types::EngineTransactionRecord> for EngineTransactionRe
 /// Derive the EVM (BSC/ETH) address from the wallet's BIP-39 seed phrase.
 /// Uses the standard BIP-44 path m/44'/60'/0'/0/0.
 pub fn engine_derive_evm_address(seed_phrase: String) -> Result<String> {
-    zipher_engine::ows::derive_evm_address(&seed_phrase)
+    zumbra_engine::ows::derive_evm_address(&seed_phrase)
 }
 
 /// Derive addresses for EVM, Solana, and Bitcoin from a single seed phrase.
@@ -980,7 +980,7 @@ pub fn engine_derive_evm_address(seed_phrase: String) -> Result<String> {
 pub fn engine_derive_multi_chain_addresses(
     seed_phrase: String,
 ) -> Result<EngineMultiChainAddresses> {
-    let addrs = zipher_engine::ows::derive_all_addresses(&seed_phrase)?;
+    let addrs = zumbra_engine::ows::derive_all_addresses(&seed_phrase)?;
     Ok(EngineMultiChainAddresses {
         evm: addrs.evm,
         solana: addrs.solana,
@@ -999,7 +999,7 @@ pub struct EngineMultiChainAddresses {
 pub fn engine_sign_evm_tx(seed_phrase: String, unsigned_tx_hex: String) -> Result<String> {
     let unsigned_bytes =
         hex::decode(&unsigned_tx_hex).map_err(|e| anyhow::anyhow!("Invalid hex: {}", e))?;
-    let signed_bytes = zipher_engine::ows::sign_evm_tx(&seed_phrase, &unsigned_bytes)?;
+    let signed_bytes = zumbra_engine::ows::sign_evm_tx(&seed_phrase, &unsigned_bytes)?;
     Ok(hex::encode(signed_bytes))
 }
 
@@ -1011,7 +1011,7 @@ pub async fn engine_sign_and_broadcast_evm_tx(
 ) -> Result<String> {
     let unsigned_bytes =
         hex::decode(&unsigned_tx_hex).map_err(|e| anyhow::anyhow!("Invalid hex: {}", e))?;
-    zipher_engine::ows::sign_and_broadcast_evm_tx(&seed_phrase, &unsigned_bytes, &rpc_url).await
+    zumbra_engine::ows::sign_and_broadcast_evm_tx(&seed_phrase, &unsigned_bytes, &rpc_url).await
 }
 
 // ---------------------------------------------------------------------------
@@ -1026,7 +1026,7 @@ pub fn engine_polymarket_sign_auth(
     nonce: u64,
 ) -> Result<PolymarketAuthResult> {
     let (address, signature) =
-        zipher_engine::polymarket::sign_clob_auth(&seed_phrase, timestamp, nonce)?;
+        zumbra_engine::polymarket::sign_clob_auth(&seed_phrase, timestamp, nonce)?;
     Ok(PolymarketAuthResult { address, signature })
 }
 
@@ -1052,7 +1052,7 @@ pub fn engine_polymarket_sign_order(
     builder: String,
     neg_risk: bool,
 ) -> Result<String> {
-    let order = zipher_engine::polymarket::PolymarketOrder {
+    let order = zumbra_engine::polymarket::PolymarketOrder {
         salt,
         maker,
         signer,
@@ -1065,17 +1065,17 @@ pub fn engine_polymarket_sign_order(
         metadata,
         builder,
     };
-    zipher_engine::polymarket::sign_order(&seed_phrase, &order, neg_risk)
+    zumbra_engine::polymarket::sign_order(&seed_phrase, &order, neg_risk)
 }
 
 /// Whether one Gamma `/markets` or nested event market object passes the default
-/// tradability filter (same rules as `zipher-cli polymarket list`). Pure JSON — no wallet.
+/// tradability filter (same rules as `zumbra polymarket list`). Pure JSON — no wallet.
 pub fn engine_polymarket_gamma_market_passes_quality_filter(
     market_json: String,
     relaxed: bool,
 ) -> bool {
-    match serde_json::from_str::<zipher_engine::polymarket::PolymarketMarket>(&market_json) {
-        Ok(m) => zipher_engine::polymarket::polymarket_market_passes_quality(&m, relaxed),
+    match serde_json::from_str::<zumbra_engine::polymarket::PolymarketMarket>(&market_json) {
+        Ok(m) => zumbra_engine::polymarket::polymarket_market_passes_quality(&m, relaxed),
         Err(_) => false,
     }
 }
@@ -1084,14 +1084,14 @@ pub fn engine_polymarket_gamma_market_passes_quality_filter(
 /// Returns JSON `PolymarketDiscoverySummary`.
 pub async fn engine_polymarket_discover(keyword: Option<String>, limit: u32) -> Result<String> {
     let summary =
-        zipher_engine::polymarket::polymarket_discover(keyword.as_deref(), limit, false).await?;
+        zumbra_engine::polymarket::polymarket_discover(keyword.as_deref(), limit, false).await?;
     Ok(serde_json::to_string(&summary)?)
 }
 
 /// Polymarket open positions for `user` (0x + 40 hex) via public Data API.
 /// Returns JSON array of `PolymarketPosition`.
 pub async fn engine_polymarket_get_positions(address: String) -> Result<String> {
-    let positions = zipher_engine::polymarket::polymarket_get_positions(&address).await?;
+    let positions = zumbra_engine::polymarket::polymarket_get_positions(&address).await?;
     Ok(serde_json::to_string(&positions)?)
 }
 
@@ -1138,7 +1138,7 @@ pub async fn engine_evm_swap_quote(
     amount_raw: String,
     user_address: String,
 ) -> Result<EvmSwapQuoteResult> {
-    let quote = zipher_engine::evm_swap::get_quote(
+    let quote = zumbra_engine::evm_swap::get_quote(
         chain_id,
         &src_token,
         src_decimals,
@@ -1185,7 +1185,7 @@ pub async fn engine_evm_swap_execute(
     amount_raw: String,
     slippage_bps: u32,
 ) -> Result<EvmSwapExecuteResult> {
-    let params = zipher_engine::evm_swap::SwapParams {
+    let params = zumbra_engine::evm_swap::SwapParams {
         rpc_url,
         seed_phrase,
         chain_id,
@@ -1198,7 +1198,7 @@ pub async fn engine_evm_swap_execute(
         slippage_bps,
     };
 
-    let result = zipher_engine::evm_swap::execute_swap(&params).await?;
+    let result = zumbra_engine::evm_swap::execute_swap(&params).await?;
 
     Ok(EvmSwapExecuteResult {
         tx_hash: result.tx_hash,
@@ -1251,7 +1251,7 @@ pub struct EngineInvoice {
 /// explicit user action (scanning a QR, tapping a checkout link, manually
 /// pasting an invoice id). Never poll silently in the background.
 pub async fn engine_check_invoice(id_or_memo: String) -> Result<EngineInvoice> {
-    let invoice = zipher_engine::cipherpay::check_invoice(&id_or_memo).await?;
+    let invoice = zumbra_engine::cipherpay::check_invoice(&id_or_memo).await?;
     Ok(EngineInvoice {
         id: invoice.id,
         status: invoice.status,

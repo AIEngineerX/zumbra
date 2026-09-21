@@ -183,7 +183,7 @@ pub fn settle_spend(data_dir: &str, reservation: i64, txid: &str) -> Result<()> 
 mod tests {
     use super::*;
     fn dir() -> std::path::PathBuf {
-        let p = std::env::temp_dir().join(format!("zipher-audit-test-{}-{}",std::process::id(),rand::random::<u64>()));
+        let p = std::env::temp_dir().join(format!("zumbra-audit-test-{}-{}",std::process::id(),rand::random::<u64>()));
         std::fs::create_dir_all(&p).unwrap(); p
     }
     #[test]

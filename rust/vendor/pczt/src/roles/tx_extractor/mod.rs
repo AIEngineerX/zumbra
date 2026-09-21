@@ -3,7 +3,7 @@
 //! - Creates bindingSig and extracts the final transaction.
 
 use core::marker::PhantomData;
-use zipher_rng_compat::OS_RNG as OsRng;
+use zumbra_rng_compat::OS_RNG as OsRng;
 
 use zcash_primitives::transaction::{
     Authorization, Transaction,

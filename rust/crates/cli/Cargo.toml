@@ -1,14 +1,14 @@
 [package]
-name = "zipher-cli"
+name = "zumbra"
 version = "0.3.0"
 edition = "2021"
 
 [[bin]]
-name = "zipher-cli"
+name = "zumbra"
 path = "src/main.rs"
 
 [dependencies]
-zipher-engine = { path = "../engine" }
+zumbra-engine = { path = "../engine" }
 ows-lib = { path = "../../../ows-core/ows/crates/ows-lib" }
 clap = { version = "4", features = ["derive", "env"] }
 tokio = { version = "1", features = ["full"] }

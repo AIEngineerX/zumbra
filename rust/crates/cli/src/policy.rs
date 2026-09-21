@@ -3,7 +3,7 @@ use anyhow::Result;
 use crate::{ensure_data_dir, print_ok, Config};
 
 pub async fn cmd_policy_show(cfg: &Config) -> Result<()> {
-    let policy = zipher_engine::policy::load_policy(&cfg.data_dir);
+    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
 
     print_ok(&policy, cfg.human, |p| {
         println!("Spending Policy:");
@@ -26,7 +26,7 @@ pub async fn cmd_policy_show(cfg: &Config) -> Result<()> {
 
 pub async fn cmd_policy_set(cfg: &Config, field: String, value: String) -> Result<()> {
     ensure_data_dir(&cfg.data_dir)?;
-    let mut policy = zipher_engine::policy::load_policy(&cfg.data_dir);
+    let mut policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
 
     match field.as_str() {
         "max_per_tx" => policy.max_per_tx = value.parse()?,
@@ -37,7 +37,7 @@ pub async fn cmd_policy_set(cfg: &Config, field: String, value: String) -> Resul
         _ => return Err(anyhow::anyhow!("Unknown policy field: {}. Valid fields: max_per_tx, daily_limit, min_spend_interval_ms, approval_threshold, require_context_id", field)),
     }
 
-    zipher_engine::policy::save_policy(&cfg.data_dir, &policy)?;
+    zumbra_engine::policy::save_policy(&cfg.data_dir, &policy)?;
 
     print_ok("updated", cfg.human, |_| {
         println!("Policy updated: {} = {}", field, value);
@@ -47,11 +47,11 @@ pub async fn cmd_policy_set(cfg: &Config, field: String, value: String) -> Resul
 
 pub async fn cmd_policy_add_allowlist(cfg: &Config, address: String) -> Result<()> {
     ensure_data_dir(&cfg.data_dir)?;
-    let mut policy = zipher_engine::policy::load_policy(&cfg.data_dir);
+    let mut policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
 
     if !policy.allowlist.contains(&address) {
         policy.allowlist.push(address.clone());
-        zipher_engine::policy::save_policy(&cfg.data_dir, &policy)?;
+        zumbra_engine::policy::save_policy(&cfg.data_dir, &policy)?;
     }
 
     print_ok("added", cfg.human, |_| {
@@ -62,10 +62,10 @@ pub async fn cmd_policy_add_allowlist(cfg: &Config, address: String) -> Result<(
 
 pub async fn cmd_policy_remove_allowlist(cfg: &Config, address: String) -> Result<()> {
     ensure_data_dir(&cfg.data_dir)?;
-    let mut policy = zipher_engine::policy::load_policy(&cfg.data_dir);
+    let mut policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
 
     policy.allowlist.retain(|a| a != &address);
-    zipher_engine::policy::save_policy(&cfg.data_dir, &policy)?;
+    zumbra_engine::policy::save_policy(&cfg.data_dir, &policy)?;
 
     print_ok("removed", cfg.human, |_| {
         println!("Address removed from allowlist: {}", address);
@@ -74,7 +74,7 @@ pub async fn cmd_policy_remove_allowlist(cfg: &Config, address: String) -> Resul
 }
 
 pub async fn cmd_audit(cfg: &Config, limit: usize, since: Option<String>) -> Result<()> {
-    let entries = zipher_engine::audit::query_log(&cfg.data_dir, limit, since.as_deref())?;
+    let entries = zumbra_engine::audit::query_log(&cfg.data_dir, limit, since.as_deref())?;
 
     print_ok(&entries, cfg.human, |entries| {
         if entries.is_empty() {

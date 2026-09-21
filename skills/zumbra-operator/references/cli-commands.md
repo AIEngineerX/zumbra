@@ -1,10 +1,10 @@
-# zipher-cli Command Reference
+# zumbra Command Reference
 
 ## Global Flags
 
 | Flag | Description |
 |------|-------------|
-| `--data-dir <PATH>` | Wallet data directory (default: `~/.zipher/mainnet`) |
+| `--data-dir <PATH>` | Wallet data directory (default: `~/.zumbra/mainnet`) |
 | `--testnet` | Use Zcash testnet |
 | `--server <URL>` | Override lightwalletd server URL |
 | `--human` | Human-readable output instead of JSON |
@@ -14,152 +14,152 @@
 ### info
 Print version, engine, network, data directory, and server URL.
 ```
-zipher-cli info
+zumbra info
 ```
 
 ### wallet create
 Create a new wallet. Outputs seed phrase — store it securely.
 ```
-zipher-cli wallet create
+zumbra wallet create
 ```
 
 ### wallet restore
-Restore from seed phrase. Reads seed from `ZIPHER_SEED` env var or stdin.
+Restore from seed phrase. Reads seed from `ZUMBRA_SEED` env var or stdin.
 ```
-zipher-cli wallet restore --birthday <HEIGHT>
+zumbra wallet restore --birthday <HEIGHT>
 ```
 
 ### wallet delete
 Delete wallet data. Requires `--confirm` flag.
 ```
-zipher-cli wallet delete --confirm
+zumbra wallet delete --confirm
 ```
 
 ### sync start
 Start syncing (blocks until complete or Ctrl+C).
 ```
-zipher-cli sync start
+zumbra sync start
 ```
 
 ### sync status
 Show current sync height and birthday.
 ```
-zipher-cli sync status
+zumbra sync status
 ```
 
 ### balance
 Show wallet balance by pool (orchard, sapling, transparent).
 ```
-zipher-cli balance
+zumbra balance
 ```
 
 ### address
 Show wallet addresses and their pool capabilities.
 ```
-zipher-cli address
+zumbra address
 ```
 
 ### transactions
 Show recent transaction history.
 ```
-zipher-cli transactions --limit 20
+zumbra transactions --limit 20
 ```
 
 ### send propose
 Create a send proposal (no seed required). Saves to pending file.
 ```
-zipher-cli send propose --to <ADDRESS> --amount <ZATOSHIS> [--memo <TEXT>] [--context-id <ID>]
+zumbra send propose --to <ADDRESS> --amount <ZATOSHIS> [--memo <TEXT>] [--context-id <ID>]
 ```
 
 ### send confirm
 Sign and broadcast the pending proposal. Requires seed.
 ```
-zipher-cli send confirm
+zumbra send confirm
 ```
 
 ### send max
 Show maximum sendable amount to an address.
 ```
-zipher-cli send max --to <ADDRESS>
+zumbra send max --to <ADDRESS>
 ```
 
 ### shield
 Shield transparent funds to shielded pool. Requires seed.
 ```
-zipher-cli shield
+zumbra shield
 ```
 
 ### policy show
 Display current spending policy.
 ```
-zipher-cli policy show
+zumbra policy show
 ```
 
 ### policy set
 Set a policy field.
 ```
-zipher-cli policy set --field <FIELD> --value <VALUE>
+zumbra policy set --field <FIELD> --value <VALUE>
 ```
 Fields: `max_per_tx`, `daily_limit`, `min_spend_interval_ms`, `approval_threshold`, `require_context_id`
 
 ### policy add-allowlist
 Add an address to the spending allowlist.
 ```
-zipher-cli policy add-allowlist --address <ADDRESS>
+zumbra policy add-allowlist --address <ADDRESS>
 ```
 
 ### policy remove-allowlist
 Remove an address from the allowlist.
 ```
-zipher-cli policy remove-allowlist --address <ADDRESS>
+zumbra policy remove-allowlist --address <ADDRESS>
 ```
 
 ### audit
 View the audit log.
 ```
-zipher-cli audit --limit 50 [--since <ISO8601_TIMESTAMP>]
+zumbra audit --limit 50 [--since <ISO8601_TIMESTAMP>]
 ```
 
 ### daemon start
 Start the daemon (foreground, sync loop + Unix socket IPC).
 ```
-zipher-cli daemon start
+zumbra daemon start
 ```
 
 ### daemon status
 Check if the daemon is running.
 ```
-zipher-cli daemon status
+zumbra daemon status
 ```
 
 ### daemon stop
 Ask the daemon to stop.
 ```
-zipher-cli daemon stop
+zumbra daemon stop
 ```
 
 ### daemon lock
 Zeroize seed in daemon memory. Sync continues, spending disabled.
 ```
-zipher-cli daemon lock
+zumbra daemon lock
 ```
 
 ### daemon unlock
 Re-provide seed to re-enable spending.
 ```
-zipher-cli daemon unlock
+zumbra daemon unlock
 ```
 
 ### x402 propose
 Parse an HTTP 402 response body and create a send proposal (no seed required).
 ```
-zipher-cli x402 propose --body '<JSON>' [--context-id <ID>]
+zumbra x402 propose --body '<JSON>' [--context-id <ID>]
 ```
 Reads from stdin if `--body` is omitted.
 
 ### x402 pay
 Parse a 402 response, pay, and return the PAYMENT-SIGNATURE header. Requires seed.
 ```
-zipher-cli x402 pay --body '<JSON>' [--context-id <ID>]
+zumbra x402 pay --body '<JSON>' [--context-id <ID>]
 ```
 Returns `{ txid, payment_signature, amount, fee, address }`. The `payment_signature` is a base64 header value to include as `PAYMENT-SIGNATURE` when retrying the original request.
