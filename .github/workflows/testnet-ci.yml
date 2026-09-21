@@ -19,7 +19,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   ZUMBRA_DATA_DIR: /tmp/zumbra-testnet
-  ZUMBRA_CHAIN: testnet
+  ZUMBRA_TESTNET: "1"
 
 jobs:
   test:

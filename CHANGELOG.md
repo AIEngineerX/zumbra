@@ -24,7 +24,8 @@ versions follow [Semantic Versioning](https://semver.org/). Nothing has been rel
 - The parent's Flutter app, its bridge crate, and the wrapper workspace.
 - Swaps, EVM payments and sweeps, prediction markets, FROST multi-party wallets, the merchant
   API, the research tools, the URL-fetching paywall tool, session tokens, and the relay-based
-  approval path. The MCP server exposes 17 wallet tools; the CLI has 15 commands.
+  approval path, and two MCP tools that could only answer "nothing" (`get_pending_approval`)
+  or "refused" (`shield_funds`). The MCP server exposes 15 wallet tools; the CLI has 15 commands.
 - The PCZT export subcommands, which had no policy check.
 - The parent's swap affiliate key and partner token.
 
@@ -33,6 +34,17 @@ versions follow [Semantic Versioning](https://semver.org/). Nothing has been rel
   encrypted OWS vault instead of a plaintext `.seed` file, refuses to overwrite an existing vault
   wallet, and writes the default spending policy so a restored wallet is capped. The plaintext
   seed-file fallback in the CLI is gone. Four tests; two mutation checks recorded.
+- A missing, unreadable or corrupt `policy.toml` refuses to spend on every CLI and MCP spend path
+  instead of loading as "no limits". Engine and CLI tests.
+- A restore whose network step fails rolls back the vault entry and the policy file it staged, so
+  the next `wallet init` cannot "reuse" the half-restored seed; and `wallet init` no longer prints
+  a seed it did not just generate. Tests.
+- `wallet init` and `wallet restore` refuse an empty vault passphrase unless
+  `ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1` is set. Test.
+- The CLI reads `ZUMBRA_DATA_DIR`, `ZUMBRA_TESTNET` and `ZUMBRA_SERVER`, as its docs, the
+  Dockerfile and CI already assumed. Test.
+- The pre-commit hook no longer exempts `.txt` files from the seed-phrase check; `seed.txt` is
+  ignored by git.
 - CLI `send confirm` checks the policy against the engine's real send amount before reading the
   seed. Previously a `--max` proposal was never policy-checked and confirm only ran the rate
   limit, so an edited pending file was signed as written. Test plus mutation check.

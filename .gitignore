@@ -12,6 +12,7 @@ key.properties
 id_*.json
 *.mnemonic
 *.seed
+seed.txt
 policy.toml
 !policy.example.toml
 

@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use anyhow::Result;
+use secrecy::{ExposeSecret, SecretString};
 use serde::Serialize;
 use zcash_protocol::consensus::Network;
 
@@ -56,34 +57,13 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
     let ows_wallet_name = std::env::var("OWS_WALLET").unwrap_or_else(|_| "default".to_string());
     let ows_passphrase = std::env::var("OWS_PASSPHRASE").unwrap_or_default();
 
-    // Check if OWS vault already has a wallet with this name
-    let seed_phrase = if ows_lib::get_wallet(&ows_wallet_name, None).is_ok() {
-        eprintln!(
-            "OWS wallet '{}' already exists — reusing it.",
-            ows_wallet_name
-        );
-        let exported = ows_lib::export_wallet(&ows_wallet_name, Some(&ows_passphrase), None)
-            .map_err(|e| anyhow::anyhow!("Failed to export OWS wallet: {}", e))?;
-        if !exported.contains(' ') || exported.starts_with('{') {
-            return Err(anyhow::anyhow!(
-                "OWS wallet '{}' is a private-key wallet, not mnemonic. \
-                 Zcash requires a mnemonic wallet for ZIP-32 key derivation.",
-                ows_wallet_name,
-            ));
-        }
-        exported
+    let (seed, created) = open_or_create_vault_seed(&ows_wallet_name, &ows_passphrase, None)?;
+    if created {
+        eprintln!("Created OWS vault wallet '{}'", ows_wallet_name);
     } else {
-        let wallet_info =
-            ows_lib::create_wallet(&ows_wallet_name, Some(24), Some(&ows_passphrase), None)
-                .map_err(|e| anyhow::anyhow!("Failed to create OWS wallet: {}", e))?;
-        eprintln!(
-            "Created OWS vault wallet '{}' (id: {})",
-            ows_wallet_name, wallet_info.id
-        );
-
-        ows_lib::export_wallet(&ows_wallet_name, Some(&ows_passphrase), None)
-            .map_err(|e| anyhow::anyhow!("Failed to export seed from new wallet: {}", e))?
-    };
+        eprintln!("OWS wallet '{}' already exists; reusing it. Its seed is not shown.", ows_wallet_name);
+    }
+    let seed_phrase = seed.expose_secret().clone();
 
     let height = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url).await? as u32;
 
@@ -122,7 +102,9 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
 
     #[derive(Serialize)]
     struct InitResult {
-        seed_phrase: String,
+        /// Present only when init generated the seed just now; a reused vault seed is never printed.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        seed_phrase: Option<String>,
         birthday: u32,
         address: String,
         data_dir: String,
@@ -132,7 +114,7 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
     }
 
     let result = InitResult {
-        seed_phrase: seed_phrase.clone(),
+        seed_phrase: init_seed_to_print(created, &seed),
         birthday: height,
         address: address.clone(),
         data_dir: cfg.data_dir.clone(),
@@ -144,8 +126,13 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
     print_ok(result, cfg.human, |r| {
         println!("Wallet initialized.");
         println!();
-        println!("  SEED PHRASE (back this up — shown only once):");
-        println!("  {}", r.seed_phrase);
+        match &r.seed_phrase {
+            Some(phrase) => {
+                println!("  SEED PHRASE (back this up; shown only once):");
+                println!("  {}", phrase);
+            }
+            None => println!("  Seed: reused from OWS wallet '{}'; not shown.", r.ows_wallet),
+        }
         println!();
         println!("  Address:    {}", r.address);
         println!("  Birthday:   {}", r.birthday);
@@ -194,6 +181,67 @@ pub fn default_policy() -> zumbra_engine::policy::SpendingPolicy {
     }
 }
 
+/// An empty vault passphrase protects nothing. Refused at every point that would store a seed,
+/// unless the operator set ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1 on purpose.
+pub fn require_passphrase(passphrase: &str) -> Result<()> {
+    if passphrase.is_empty() && std::env::var("ZUMBRA_UNSAFE_EMPTY_PASSPHRASE").as_deref() != Ok("1") {
+        return Err(anyhow::anyhow!(
+            "OWS_PASSPHRASE is empty. Set a real vault passphrase; or, if you accept a vault that              anyone who can read the file can open, set ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1."
+        ));
+    }
+    Ok(())
+}
+
+/// The seed for `wallet init`: the existing OWS vault wallet if there is one (`created` =
+/// false), otherwise a fresh 24-word one (`created` = true). Only a seed created here may be
+/// shown to the user; one that already lived in the vault is not init's to print.
+pub fn open_or_create_vault_seed(
+    ows_wallet: &str,
+    passphrase: &str,
+    vault_path: Option<&std::path::Path>,
+) -> Result<(SecretString, bool)> {
+    require_passphrase(passphrase)?;
+    if ows_lib::get_wallet(ows_wallet, vault_path).is_ok() {
+        let exported = ows_lib::export_wallet(ows_wallet, Some(passphrase), vault_path)
+            .map_err(|e| anyhow::anyhow!("Failed to export OWS wallet: {}", e))?;
+        if !exported.contains(' ') || exported.starts_with('{') {
+            return Err(anyhow::anyhow!(
+                "OWS wallet '{}' is a private-key wallet, not mnemonic. \
+                 Zcash requires a mnemonic wallet for ZIP-32 key derivation.",
+                ows_wallet,
+            ));
+        }
+        return Ok((SecretString::new(exported), false));
+    }
+    ows_lib::create_wallet(ows_wallet, Some(24), Some(passphrase), vault_path)
+        .map_err(|e| anyhow::anyhow!("Failed to create OWS wallet: {}", e))?;
+    let exported = ows_lib::export_wallet(ows_wallet, Some(passphrase), vault_path)
+        .map_err(|e| anyhow::anyhow!("Failed to export seed from new wallet: {}", e))?;
+    Ok((SecretString::new(exported), true))
+}
+
+/// What `wallet init` is allowed to print: the seed it generated, once; never a reused one.
+pub fn init_seed_to_print(created: bool, seed: &SecretString) -> Option<String> {
+    created.then(|| seed.expose_secret().clone())
+}
+
+/// What `prepare_restore` put on disk. If the step after it fails, `rollback` removes it all,
+/// so a half-done restore cannot be mistaken for a wallet by the next `wallet init`.
+#[must_use]
+#[derive(Debug)]
+pub struct RestoreStaging {
+    ows_wallet: String,
+    vault_path: Option<std::path::PathBuf>,
+    policy_path: std::path::PathBuf,
+}
+
+impl RestoreStaging {
+    pub fn rollback(self) {
+        ows_lib::delete_wallet(&self.ows_wallet, self.vault_path.as_deref()).ok();
+        std::fs::remove_file(&self.policy_path).ok();
+    }
+}
+
 /// Everything restore does before it touches the network: the phrase goes into the encrypted
 /// OWS vault under `ows_wallet` and nowhere else, and the data dir gets the default policy.
 /// Refuses to replace a vault wallet that already exists, so a typo cannot overwrite a seed.
@@ -203,17 +251,22 @@ pub fn prepare_restore(
     passphrase: &str,
     phrase: &str,
     vault_path: Option<&std::path::Path>,
-) -> Result<()> {
+) -> Result<RestoreStaging> {
+    require_passphrase(passphrase)?;
     if ows_lib::get_wallet(ows_wallet, vault_path).is_ok() {
         return Err(anyhow::anyhow!(
-            "OWS wallet '{}' already exists. Set OWS_WALLET to a new name for the restored seed.",
+            "OWS wallet '{}' already exists. Set OWS_WALLET to a new name for the restored seed, and keep OWS_WALLET set to that name whenever you run zumbra or zumbra-mcp.",
             ows_wallet
         ));
     }
     ows_lib::import_wallet_mnemonic(ows_wallet, phrase, Some(passphrase), None, vault_path)
         .map_err(|e| anyhow::anyhow!("Failed to store the seed in the OWS vault: {}", e))?;
     zumbra_engine::policy::save_policy(data_dir, &default_policy())?;
-    Ok(())
+    Ok(RestoreStaging {
+        ows_wallet: ows_wallet.to_string(),
+        vault_path: vault_path.map(|p| p.to_path_buf()),
+        policy_path: std::path::Path::new(data_dir).join("policy.toml"),
+    })
 }
 
 pub async fn cmd_wallet_restore(cfg: &Config, birthday: u32) -> Result<()> {
@@ -228,6 +281,9 @@ pub async fn cmd_wallet_restore(cfg: &Config, birthday: u32) -> Result<()> {
     }
 
     // The phrase comes in on stdin so it never appears in argv or shell history.
+    if std::io::IsTerminal::is_terminal(&io::stdin()) {
+        eprintln!("Paste the 24-word seed phrase and press Enter. It will be visible in this terminal; clear the scrollback afterwards.");
+    }
     let mut line = zeroize::Zeroizing::new(String::new());
     io::stdin().read_line(&mut line)?;
     let phrase = zeroize::Zeroizing::new(line.trim().to_string());
@@ -242,21 +298,30 @@ pub async fn cmd_wallet_restore(cfg: &Config, birthday: u32) -> Result<()> {
 
     let ows_wallet = std::env::var("OWS_WALLET").unwrap_or_else(|_| "default".to_string());
     let ows_passphrase = std::env::var("OWS_PASSPHRASE").unwrap_or_default();
-    prepare_restore(&cfg.data_dir, &ows_wallet, &ows_passphrase, &phrase, None)?;
+    let staging = prepare_restore(&cfg.data_dir, &ows_wallet, &ows_passphrase, &phrase, None)?;
 
-    ensure_sapling_params(&cfg.data_dir).await?;
     eprintln!("Restoring wallet from seed (birthday={})...", birthday);
-
-    zumbra_engine::wallet::restore(
-        &cfg.data_dir,
-        &cfg.server_url,
-        cfg.network,
-        &phrase,
-        birthday,
-        None,
-        None,
-    )
-    .await?;
+    let restored = async {
+        ensure_sapling_params(&cfg.data_dir).await?;
+        zumbra_engine::wallet::restore(
+            &cfg.data_dir,
+            &cfg.server_url,
+            cfg.network,
+            &phrase,
+            birthday,
+            None,
+            None,
+        )
+        .await
+    }
+    .await;
+    if let Err(e) = restored {
+        staging.rollback();
+        return Err(anyhow::anyhow!(
+            "Restore failed and nothing was kept: {:#}. Fix the cause (usually the server) and run restore again.",
+            e
+        ));
+    }
 
     let addresses = zumbra_engine::query::get_addresses()
         .await
@@ -521,7 +586,7 @@ pub async fn cmd_send_propose(
     priority: bool,
 ) -> Result<()> {
     sync_if_needed(cfg).await?;
-    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    let policy = spend_policy(&cfg.data_dir)?;
 
     // For max sends, we don't know the amount until the engine produces the proposal,
     // so we skip the policy daily-limit check here. (The rate-limit check still runs
@@ -608,6 +673,13 @@ pub async fn cmd_send_propose(
     Ok(())
 }
 
+/// The policy a spend path may use: the file must exist and parse. A missing or corrupt
+/// policy refuses to spend; it never becomes "no limits".
+pub fn spend_policy(data_dir: &str) -> Result<zumbra_engine::policy::SpendingPolicy> {
+    zumbra_engine::policy::load_policy_checked(data_dir)
+        .map_err(|e| anyhow::anyhow!("Spending policy unavailable, refusing to spend: {:#}", e))
+}
+
 /// The gate every CLI confirm passes through: the policy judges the amount the engine will
 /// actually send (a `--max` proposal has none until now, and the pending file is writable by
 /// the agent's OS user), and a refusal is logged. Only after that is the seed read.
@@ -616,7 +688,7 @@ pub fn seed_for_confirm(
     pending: &PendingProposal,
     send_amount: u64,
 ) -> Result<secrecy::SecretString> {
-    let policy = zumbra_engine::policy::load_policy(data_dir);
+    let policy = spend_policy(data_dir)?;
     let daily_spent = zumbra_engine::audit::daily_spent(data_dir)?;
     if let Err(violation) = zumbra_engine::policy::check_proposal(
         &policy,
@@ -646,7 +718,7 @@ pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
     sync_if_needed(cfg).await?;
     let pending = load_pending(&cfg.data_dir)?;
 
-    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    let policy = spend_policy(&cfg.data_dir)?;
     if let Err(violation) = zumbra_engine::policy::check_rate_limit(&policy) {
         zumbra_engine::audit::log_event(
             &cfg.data_dir,
@@ -957,6 +1029,25 @@ mod confirm_gate_tests {
         );
         std::fs::remove_dir_all(&dir).ok();
     }
+
+    #[test]
+    fn confirm_refuses_when_the_policy_file_is_corrupt_or_missing() {
+        std::env::set_var("OWS_WALLET", format!("zumbra-no-such-wallet-{}", std::process::id()));
+        let pending = PendingProposal { address: "utest1x".into(), amount: 1, memo: None, is_max: false, context_id: None };
+
+        let missing = scratch("confirm-missing");
+        let err = seed_for_confirm(missing.to_str().unwrap(), &pending, 1).unwrap_err().to_string();
+        assert!(err.to_lowercase().contains("policy"), "missing policy should refuse, got: {err}");
+        assert!(!err.contains("OWS"), "seed was read before the policy was checked: {err}");
+
+        let corrupt = scratch("confirm-corrupt");
+        std::fs::write(corrupt.join("policy.toml"), "max_per_tx = \"x\"\n").unwrap();
+        let err = seed_for_confirm(corrupt.to_str().unwrap(), &pending, 1).unwrap_err().to_string();
+        assert!(err.to_lowercase().contains("policy"), "corrupt policy should refuse, got: {err}");
+        assert!(!err.contains("OWS"), "seed was read before the policy was checked: {err}");
+        std::fs::remove_dir_all(&missing).ok();
+        std::fs::remove_dir_all(&corrupt).ok();
+    }
 }
 
 #[cfg(test)]
@@ -981,7 +1072,7 @@ mod restore_tests {
         let vault = dir.join("vault");
         let phrase = ows_lib::generate_mnemonic(24).unwrap();
 
-        prepare_restore(data_dir.to_str().unwrap(), "restore-test", "pass", &phrase, Some(&vault))
+        let _staging = prepare_restore(data_dir.to_str().unwrap(), "restore-test", "pass", &phrase, Some(&vault))
             .expect("prepare_restore");
 
         let exported = ows_lib::export_wallet("restore-test", Some("pass"), Some(&vault)).unwrap();
@@ -1014,11 +1105,68 @@ mod restore_tests {
         let second = ows_lib::generate_mnemonic(24).unwrap();
         let dd = data_dir.to_str().unwrap();
 
-        prepare_restore(dd, "dup", "pass", &first, Some(&vault)).unwrap();
+        let _staging = prepare_restore(dd, "dup", "pass", &first, Some(&vault)).unwrap();
         let err = prepare_restore(dd, "dup", "pass", &second, Some(&vault)).unwrap_err();
         assert!(err.to_string().contains("dup"), "error should name the wallet: {err}");
         let kept = ows_lib::export_wallet("dup", Some("pass"), Some(&vault)).unwrap();
         assert_eq!(kept, first, "the existing vault wallet was replaced");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// An empty vault passphrase protects nothing. Both entry points refuse it unless the
+    /// operator has set ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1 on purpose.
+    #[test]
+    fn init_and_restore_refuse_an_empty_passphrase() {
+        let dir = scratch("empty-pass");
+        let vault = dir.join("vault");
+        let phrase = ows_lib::generate_mnemonic(24).unwrap();
+        std::env::remove_var("ZUMBRA_UNSAFE_EMPTY_PASSPHRASE");
+
+        let err = prepare_restore(dir.to_str().unwrap(), "empty", "", &phrase, Some(&vault)).unwrap_err().to_string();
+        assert!(err.to_lowercase().contains("passphrase"), "restore accepted an empty passphrase: {err}");
+        assert!(ows_lib::export_wallet("empty", Some(""), Some(&vault)).is_err(), "restore stored the seed anyway");
+
+        let err = open_or_create_vault_seed("empty2", "", Some(&vault)).unwrap_err().to_string();
+        assert!(err.to_lowercase().contains("passphrase"), "init accepted an empty passphrase: {err}");
+        assert!(ows_lib::get_wallet("empty2", Some(&vault)).is_err(), "init created a vault wallet anyway");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// If the network step after staging fails, nothing may be left behind: otherwise the next
+    /// `wallet init` finds the vault entry, "reuses" it, and a stale birthday hides the funds.
+    #[test]
+    fn a_failed_restore_leaves_no_vault_entry_and_no_policy_behind() {
+        let dir = scratch("restore-rollback");
+        let data_dir = dir.join("data");
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let vault = dir.join("vault");
+        let phrase = ows_lib::generate_mnemonic(24).unwrap();
+        let dd = data_dir.to_str().unwrap();
+
+        let staging = prepare_restore(dd, "rb", "pass", &phrase, Some(&vault)).unwrap();
+        staging.rollback();
+
+        assert!(ows_lib::export_wallet("rb", Some("pass"), Some(&vault)).is_err(), "vault entry survived the rollback");
+        assert!(!data_dir.join("policy.toml").exists(), "policy.toml survived the rollback");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Init may print a seed it just generated, once. A seed that already lived in the vault is
+    /// not init's to print.
+    #[test]
+    fn init_reports_whether_it_created_the_vault_seed() {
+        let dir = scratch("init-reuse");
+        let vault = dir.join("vault");
+
+        let (first, created_first) = open_or_create_vault_seed("reuse", "pass", Some(&vault)).unwrap();
+        let (second, created_second) = open_or_create_vault_seed("reuse", "pass", Some(&vault)).unwrap();
+
+        assert!(created_first, "first call must create the vault seed");
+        assert!(!created_second, "second call must report reuse");
+        assert_eq!(first.expose_secret(), second.expose_secret());
+        assert_eq!(first.expose_secret().split_whitespace().count(), 24);
+        assert!(init_seed_to_print(created_second, &second).is_none(), "a reused seed must not be printed");
+        assert!(init_seed_to_print(created_first, &first).is_some());
         std::fs::remove_dir_all(&dir).ok();
     }
 }

@@ -22,15 +22,15 @@ mod wallet;
 )]
 struct Cli {
     /// Wallet data directory
-    #[arg(long, global = true)]
+    #[arg(long, global = true, env = "ZUMBRA_DATA_DIR")]
     data_dir: Option<String>,
 
-    /// Use Zcash testnet
-    #[arg(long, global = true)]
+    /// Use Zcash testnet (env accepts 1/0, true/false, yes/no)
+    #[arg(long, global = true, env = "ZUMBRA_TESTNET", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
     testnet: bool,
 
     /// Override lightwalletd server URL
-    #[arg(long, global = true)]
+    #[arg(long, global = true, env = "ZUMBRA_SERVER")]
     server: Option<String>,
 
     /// Human-readable output instead of JSON

@@ -29,10 +29,12 @@ zumbra --testnet wallet init
 `init` prints the seed phrase once, on purpose, so you can write it down. It also writes the
 default policy and prints an MCP config block. Nothing else ever prints the seed.
 
-Restoring an existing seed takes it on stdin, never on the command line:
+Restoring an existing seed takes it on stdin, never on the command line. Run the command, paste
+the 24 words at the prompt, press Enter; or pipe it from a password manager. If anything after
+the seed is stored fails (usually the server), the restore rolls itself back and tells you.
 
 ```bash
-zumbra --testnet wallet restore --birthday <block height> < seed.txt
+zumbra --testnet wallet restore --birthday <block height>
 ```
 
 ## 2. Sync and read
@@ -99,9 +101,9 @@ zumbra --testnet audit --since 2026-09-01
 
 The tools mirror the CLI's read and send commands: `wallet_status`, `get_balance`,
 `get_transactions`, `sync_status`, `validate_address`, `propose_send`, `confirm_send`,
-`get_pending_approval`, `shield_funds`, `wallet_lock`, `pay_x402`, plus the Ironwood
-pool-migration tools and `vote_eligibility`. No tool unlocks the wallet, approves a send, or
-changes the policy. `wallet_lock` clears the seed from memory; only restarting the server from
+`wallet_lock`, `pay_x402`, plus the Ironwood pool-migration tools and `vote_eligibility`.
+Shielding transparent funds is an operator action: `zumbra shield` on the CLI. No tool unlocks
+the wallet, approves a send, or changes the policy. `wallet_lock` clears the seed from memory; only restarting the server from
 your terminal brings it back.
 
 ## 6. Keep it running
@@ -115,12 +117,12 @@ zumbra --testnet daemon stop
 
 ## Global flags
 
-| Flag | Meaning |
-|---|---|
-| `--testnet` | Zcash testnet. Start here. |
-| `--data-dir <path>` | Wallet directory; default `~/.zumbra/<network>` |
-| `--server <url>` | lightwalletd or Zaino server; the default is a community server |
-| `--human` | Prose instead of JSON |
+| Flag | Environment | Meaning |
+|---|---|---|
+| `--testnet` | `ZUMBRA_TESTNET=1` | Zcash testnet. Start here. |
+| `--data-dir <path>` | `ZUMBRA_DATA_DIR` | Wallet directory; default `~/.zumbra/<network>` |
+| `--server <url>` | `ZUMBRA_SERVER` | lightwalletd or Zaino server; the default is a community server |
+| `--human` | | Prose instead of JSON |
 
 Before funding anything on mainnet, read [`SECURITY.md`](../SECURITY.md). It says what holds
 today and what does not.

@@ -54,7 +54,7 @@ pub async fn cmd_x402_pay(
     let amount = zumbra_engine::x402::amount_zatoshis(&req)?;
     let address = req.pay_to.clone();
 
-    let policy = zumbra_engine::policy::load_policy(&cfg.data_dir);
+    let policy = crate::wallet::spend_policy(&cfg.data_dir)?;
 
     let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
     if let Err(violation) =

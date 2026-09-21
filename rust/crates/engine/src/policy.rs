@@ -238,12 +238,18 @@ pub fn load_policy(data_dir: &str) -> SpendingPolicy {
     }
 }
 
-/// Signing must distinguish an absent policy from an unreadable/corrupt one.
+/// The loader for spend paths: a missing, unreadable or corrupt policy file is an error, never
+/// a default. `load_policy` (defaults on missing) is for the policy editor and status displays.
 pub fn load_policy_checked(data_dir: &str) -> Result<SpendingPolicy> {
-    match std::fs::read_to_string(policy_path(data_dir)) {
-        Ok(contents) => Ok(toml::from_str(&contents)?),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(SpendingPolicy::default()),
-        Err(e) => Err(e.into()),
+    let path = policy_path(data_dir);
+    match std::fs::read_to_string(&path) {
+        Ok(contents) => toml::from_str(&contents)
+            .map_err(|e| anyhow::anyhow!("policy file {} does not parse: {}", path.display(), e)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(anyhow::anyhow!(
+            "no policy file at {}; run `zumbra wallet init`, or `zumbra policy set`, before spending",
+            path.display()
+        )),
+        Err(e) => Err(anyhow::anyhow!("policy file {} unreadable: {}", path.display(), e)),
     }
 }
 
@@ -322,4 +328,38 @@ pub fn check_rate_limit(policy: &SpendingPolicy) -> std::result::Result<(), Poli
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod loader_tests {
+    use super::*;
+
+    fn scratch(tag: &str) -> std::path::PathBuf {
+        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let dir = std::env::temp_dir().join(format!("zumbra-policy-{tag}-{}-{nanos}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn spend_paths_refuse_a_missing_policy_file() {
+        let dir = scratch("missing");
+        assert!(load_policy_checked(dir.to_str().unwrap()).is_err());
+    }
+
+    #[test]
+    fn spend_paths_refuse_a_corrupt_policy_file() {
+        let dir = scratch("corrupt");
+        std::fs::write(dir.join("policy.toml"), "daily_limit = \"lots\"\n").unwrap();
+        assert!(load_policy_checked(dir.to_str().unwrap()).is_err());
+    }
+
+    #[test]
+    fn spend_paths_load_a_valid_policy_file() {
+        let dir = scratch("valid");
+        let p = SpendingPolicy { max_per_tx: 5, daily_limit: 6, min_spend_interval_ms: 0, require_context_id: false, approval_threshold: 7, allowlist: vec![] };
+        save_policy(dir.to_str().unwrap(), &p).unwrap();
+        let loaded = load_policy_checked(dir.to_str().unwrap()).unwrap();
+        assert_eq!((loaded.max_per_tx, loaded.daily_limit, loaded.approval_threshold), (5, 6, 7));
+    }
 }

@@ -63,8 +63,6 @@ policy.
 | `get_balance` | Balance per pool: Orchard, Sapling, transparent, unconfirmed |
 | `propose_send` | Builds a send proposal, returns fee and amount for review; no seed loaded |
 | `confirm_send` | Runs the policy, then signs and broadcasts the pending proposal |
-| `get_pending_approval` | Shows a proposal waiting on the operator, if any |
-| `shield_funds` | Moves transparent funds into the shielded pool |
 | `get_transactions` | Recent history with memos |
 | `sync_status` | Synced height, latest height, whether syncing, connection errors |
 | `validate_address` | Address validity and type |

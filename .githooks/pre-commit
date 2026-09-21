@@ -24,12 +24,14 @@ fi
 # Mutation-tested 2026-09-20: the first version anchored the run to the start of the line and
 # filtered by a filename that never appears in diff lines, so a comment-prefixed phrase went
 # through and into a commit.
-for f in $staged; do
-  case "$f" in *.md|*.markdown|*.txt) continue ;; esac
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  case "$f" in *.md|*.markdown) continue ;; esac
   seedish=$(git diff --cached -U0 -- "$f" | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E '([a-z]{3,8} ){11,}[a-z]{3,8}' || true)
   [ -n "$seedish" ] && fail "$f contains a seed-phrase-shaped line (12+ short lowercase words in a row):
 $(printf '%s\n' "$seedish" | head -3)"
-done
+done < <(printf '%s
+' "$staged")
 
 # 3. gitleaks on the staged changes, if installed. Not installed is a warning, not a bypass.
 if command -v gitleaks >/dev/null 2>&1; then

@@ -20,7 +20,7 @@ zumbra info
 ### wallet init
 Create a new wallet. Outputs seed phrase — store it securely.
 ```
-zumbra wallet create
+zumbra wallet init
 ```
 
 ### wallet restore

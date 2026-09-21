@@ -95,10 +95,10 @@ exactly what holds now.
 |---|---|
 | read balance, addresses, history, sync state | change the policy through any tool |
 | propose a send and confirm it within the policy | approve its own above-threshold send |
-| shield transparent funds | unlock a locked wallet |
+| validate an address | unlock a locked wallet |
 | pay an x402 paywall within the policy | export, print or see the seed |
 
-No MCP tool reads or writes the policy. The file itself is protected by the operating system,
+Shielding transparent funds is an operator action on the CLI. No MCP tool reads or writes the policy. The file itself is protected by the operating system,
 not by Zumbra: if the agent runs as your OS user, it can edit the file with a text editor. Run
 the wallet as a separate user from the agent; `SECURITY.md` lists this as an open item.
 

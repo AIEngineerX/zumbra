@@ -20,7 +20,7 @@
     },
     {
       "name": "wallet_lock",
-      "description": "Lock the wallet — clears the seed from memory. All signing operations will fail until unlocked. Read-only tools (balance, status, transactions) still work."
+      "description": "Lock the wallet — clears the seed from memory. Signing fails until the operator restarts the server. Read-only tools (balance, status, transactions) still work."
     },
     {
       "name": "get_balance",
@@ -35,14 +35,6 @@
       "description": "Sign and broadcast the pending send proposal. Uses seed from server memory — never pass seed as argument."
     },
     {
-      "name": "get_pending_approval",
-      "description": "Get the current pending approval awaiting operator review, if any. Returns approval details or null."
-    },
-    {
-      "name": "shield_funds",
-      "description": "Shield transparent funds into the shielded pool. Uses seed from server memory."
-    },
-    {
       "name": "get_transactions",
       "description": "Get recent transaction history with memos"
     },
@@ -53,10 +45,6 @@
     {
       "name": "validate_address",
       "description": "Validate a Zcash address and return whether it is valid and its type"
-    },
-    {
-      "name": "pay_url",
-      "description": "Pay any 402 paywall by URL. Automatically detects x402 or MPP protocol, pays, retries the request, and returns the response. This is the simplest way to access a paid API."
     },
     {
       "name": "vote_eligibility",

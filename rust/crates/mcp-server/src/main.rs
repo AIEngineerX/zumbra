@@ -268,7 +268,7 @@ impl ZumbraMcpServer {
         })
     }
 
-    #[tool(description = "Lock the wallet — clears the seed from memory. All signing operations will fail until unlocked. Read-only tools (balance, status, transactions) still work.")]
+    #[tool(description = "Lock the wallet — clears the seed from memory. Signing fails until the operator restarts the server. Read-only tools (balance, status, transactions) still work.")]
     async fn wallet_lock(&self) -> String {
         let _payment = PAYMENT_OPERATION.lock().await;
         self.reviewed_send.lock().await.take();
@@ -429,19 +429,6 @@ impl ZumbraMcpServer {
                 err_response(&e)
             }
         }
-    }
-
-    #[tool(description = "Get the current pending approval awaiting operator review, if any. Returns approval details or null.")]
-    async fn get_pending_approval(&self) -> String {
-        match zumbra_engine::policy::get_pending_approval() {
-            Some(p) => ok_response(p),
-            None => ok_response(serde_json::json!(null)),
-        }
-    }
-
-    #[tool(description = "Shield transparent funds into the shielded pool. Uses seed from server memory.")]
-    async fn shield_funds(&self) -> String {
-        err_code_response(APPROVAL_REQUIRED, "Shield funds from the authenticated wallet UI or operator CLI.")
     }
 
     #[tool(description = "Get recent transaction history with memos")]
@@ -686,7 +673,7 @@ impl ServerHandler for ZumbraMcpServer {
                 "Zumbra: headless shielded Zcash wallet for AI agents. \
                  The seed lives in an encrypted vault on this machine; never pass it as a tool argument. \
                  Sends are two-step: propose_send, then confirm_send. The operator's spending policy runs before anything is signed and cannot be changed from here. \
-                 Above the approval threshold, confirm_send waits for the operator; there is no MCP approval tool. \
+                 Above the approval threshold a send is refused today; operator approval is not built yet, and there is no MCP approval tool. \
                  wallet_lock clears the seed from memory; only an operator restart can bring it back. \
                  pay_x402 pays an x402 paywall from a 402 response body, within the same policy. \
                  Governance voting is unavailable in this version."
@@ -813,6 +800,9 @@ mod security_tests {
     async fn replaced_proposal_cannot_be_confirmed_or_consumed() {
         let dir = std::env::temp_dir().join(format!("zumbra-mcp-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
+        // A spend path with no policy file refuses before anything else; this test is about the
+        // proposal id, so give it a policy to get past that gate.
+        zumbra_engine::policy::save_policy(dir.to_str().unwrap(), &zumbra_engine::policy::SpendingPolicy::default()).unwrap();
         let server = ZumbraMcpServer {
             data_dir: dir.to_str().unwrap().to_string(),
             seed: Arc::new(RwLock::new(Some(SecretString::new("dummy-test-secret".into())))),
@@ -837,7 +827,7 @@ mod security_tests {
     #[test]
     fn agent_cannot_invoke_operator_or_unbounded_signing_tools() {
         let tools = ZumbraMcpServer::tool_router().list_all();
-        for name in ["wallet_unlock", "approve_send", "polymarket_bet"] {
+        for name in ["wallet_unlock", "approve_send", "polymarket_bet", "get_pending_approval", "shield_funds"] {
             assert!(!tools.iter().any(|t| t.name == name), "unsafe tool exposed: {name}");
         }
         assert!(serde_json::from_str::<ConfirmSendParams>(r#"{"context_id":null}"#).is_err());

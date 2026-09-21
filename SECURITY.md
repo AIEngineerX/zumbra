@@ -23,12 +23,17 @@ done at fork time; its findings are summarised here and tracked privately by the
 
 Holds on the current code (verified by reading, not yet by running):
 - Amounts are `u64` end to end; non-finite values cannot reach the policy check.
-- On every ZEC send path the policy check runs before the seed is read; seed bytes are zeroised
+- On every ZEC send path (propose, confirm, x402) the policy check runs before the seed is read;
+  `shield` and `consolidate` are sends to the wallet's own address and read the seed without a
+  policy check; seed bytes are zeroised
   after key derivation; no key material is written to logs.
 - MCP sends are two-step (propose, then confirm) with an unpredictable proposal ID, and the
   self-unlock and self-approve tools were removed upstream on 2026-09-10.
-- Daily spending uses durable reservations; a corrupt policy file refuses to spend.
+- Daily spending uses durable reservations. A missing, unreadable or corrupt policy file refuses
+  to spend on every CLI and MCP spend path (tested 2026-09-21).
 - The vault is scrypt + AES-256-GCM; the npm installer verifies SHA-256 checksums.
+- An empty vault passphrase is refused wherever a seed would be stored, unless the operator sets
+  `ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1` on purpose (tested 2026-09-21).
 - `wallet restore` reads the seed from stdin, stores it only in the vault, and writes the default
   policy; the CLI never reads a seed from a file in the data directory. Tested, with a mutation
   check (2026-09-21).
@@ -37,12 +42,11 @@ Holds on the current code (verified by reading, not yet by running):
   send; refusals are logged. Tested, with a mutation check (2026-09-21).
 
 Does **not** hold yet (scheduled, in severity order):
-- A missing policy file means no limits; a zero in the policy means unlimited, not zero.
+- A zero in the policy means unlimited, not zero.
 - Policy files, the audit database, and `policy set` are writable by the same OS user as the agent.
 - Above the approval threshold a send is blocked outright; the operator approval channel that
   replaces the parent's relay is not built yet.
 - Untrusted strings (memos, 402 bodies) are not sanitised before reaching the model.
-- An empty vault passphrase is accepted by default.
 
 Removed rather than fixed, 2026-09-21: the PCZT export path, the EVM, swap and prediction-market
 paths, the URL-fetching paywall tool, the session tokens and the parent's relay. Swaps do not

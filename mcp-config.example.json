@@ -5,8 +5,7 @@
       "env": {
         "OWS_WALLET": "default",
         "OWS_PASSPHRASE": "",
-        "ZUMBRA_DATA_DIR": "/path/to/.zumbra/mainnet",
-        "FIRECRAWL_API_KEY": "fc-..."
+        "ZUMBRA_DATA_DIR": "/path/to/.zumbra/mainnet"
       }
     }
   }
