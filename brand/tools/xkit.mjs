@@ -86,6 +86,66 @@ render(doc(1600, 900,
   mono(120, 820, 20, "DESIGN INTENT · SEE SECURITY.MD FOR WHAT HOLDS TODAY", MIST)
 ), 1600, "how-a-send-works-1600x900.png");
 
+// 5b. Security card: what holds and what does not, verbatim register of SECURITY.md
+const col = (x, y, title, items, titleFill) =>
+  mono(x, y, 22, title, titleFill) + items.map((t, i) => mono(x, y + 52 + i * 44, 24, t, PALE)).join("");
+render(doc(1600, 900,
+  mark(96, 84, 96) + word(220, 154, 56) +
+  mono(96, 300, 20, "SECURITY.MD, THE SHORT VERSION", MIST) +
+  col(96, 380, "HOLDS TODAY", [
+    "seed only in an encrypted vault",
+    "policy before any key, on every path",
+    "missing or corrupt policy: nothing spends",
+    "above threshold: operator signs at a terminal",
+    "every refusal logged",
+  ], GOLD) +
+  col(860, 380, "DOES NOT HOLD YET", [
+    "no independent audit",
+    "zero in the policy means unlimited",
+    "policy file is only as safe as your OS user",
+    "rate limit is per process on the CLI",
+    "so: testnet, and nothing you cannot lose",
+  ], MIST) +
+  mono(96, 840, 18, "GITHUB.COM/AIENGINEERX/ZUMBRA/BLOB/MAIN/SECURITY.MD", MIST)
+), 1600, "security-holds-1600x900.png");
+
+// 5c. Agent card: what the agent can and cannot do over MCP
+render(doc(1600, 900,
+  mark(96, 84, 96) + word(220, 154, 56) +
+  mono(96, 300, 20, "WHAT THE AGENT CAN AND CANNOT DO", MIST) +
+  col(96, 380, "CAN", [
+    "read balance, addresses, history",
+    "propose a send within the policy",
+    "confirm it, seed read last",
+    "pay an x402 paywall within the policy",
+    "lock the wallet",
+  ], GOLD) +
+  col(860, 380, "CANNOT", [
+    "read or change the policy",
+    "approve its own above-threshold send",
+    "unlock a locked wallet",
+    "see, print or export the seed",
+    "raise a limit, ever",
+  ], MIST) +
+  mono(96, 840, 18, "15 MCP TOOLS · STDIO · HERMES, OPENCLAW, CLAUDE, CURSOR", MIST)
+), 1600, "agent-can-cannot-1600x900.png");
+
+// 5d. Policy card: the real default policy.toml a fresh wallet gets
+render(doc(1600, 900,
+  mark(96, 84, 96) + word(220, 154, 56) +
+  mono(96, 300, 20, "THE POLICY IS A FILE YOU WRITE. THE AGENT HAS NO TOOL FOR IT.", MIST) +
+  mono(96, 380, 22, "$ cat ~/.zumbra/testnet/policy.toml", GOLD) +
+  [
+    "max_per_tx = 1000000          # 0.01 ZEC",
+    "daily_limit = 10000000        # 0.1 ZEC per rolling day",
+    "approval_threshold = 5000000  # above this, you sign it",
+    "min_spend_interval_ms = 0",
+    "require_context_id = false",
+    "allowlist = []                # empty = any shielded address",
+  ].map((t, i) => mono(96, 450 + i * 50, 26, t, PALE)).join("") +
+  mono(96, 840, 18, "VALUES IN ZATOSHI · 1 ZEC = 100 000 000 ZAT · WRITTEN BY ZUMBRA WALLET INIT", MIST)
+), 1600, "policy-file-1600x900.png");
+
 // 6. Quote/blank card: mark and wordmark small top-left, room for text you type in the post
 render(doc(1600, 900, mark(96, 96, 112) + word(240, 180, 64) + mono(96, 820, 20, "ZUMBRA", MIST), true), 1600, "blank-1600x900.png");
 
@@ -95,4 +155,4 @@ for (const f of ["x-avatar-400.png", "x-header-1500x500.png", "og-1200x630.png"]
   if (existsSync(src)) copyFileSync(src, join(out, f));
 }
 
-console.log("xkit/images written: announce, square, what-it-is, how-a-send-works, blank, plus avatar/header/og copies");
+console.log("xkit/images written: announce, square, what-it-is, how-a-send-works, security-holds, agent-can-cannot, policy-file, blank, plus avatar/header/og copies");
