@@ -23,7 +23,7 @@ FINDINGS=0
 EXCLUDE=(
   ':!LICENSE.md' ':!NOTICE'
   ':!README.md' ':!SECURITY.md' ':!CONTRIBUTING.md' ':!CLAUDE.md' ':!scripts/pre-public-audit.sh'
-  ':!ows-core'
+  ':!ows-core' ':!.gitleaks.toml' ':!CHANGELOG.md' ':!.githooks/**'
 )
 
 report() {

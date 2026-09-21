@@ -6,7 +6,7 @@ const https = require("https");
 const crypto = require("crypto");
 const { execFileSync } = require("node:child_process");
 
-const REPO = "atmospherelabs-dev/zumbra-app";
+const REPO = "AIEngineerX/zumbra";
 const BIN_DIR = path.join(__dirname, "native");
 
 const BINARIES = [

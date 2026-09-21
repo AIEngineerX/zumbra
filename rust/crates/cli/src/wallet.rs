@@ -427,7 +427,7 @@ pub async fn cmd_keys(cfg: &Config) -> Result<()> {
             println!("UIVK (Unified Incoming Viewing Key):");
             println!("  {}", k);
             println!();
-            println!("Use the UIVK to register with CipherPay for payment detection.");
+            println!("The UIVK lets a payment processor detect incoming payments without spending rights.");
         }
         if d.ufvk.is_none() && d.uivk.is_none() {
             println!("No viewing keys found. Create a wallet first.");

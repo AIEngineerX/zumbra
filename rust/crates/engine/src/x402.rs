@@ -3,7 +3,7 @@ use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
-// x402 protocol types — matches @cipherpay/x402 PaymentRequired schema
+// x402 protocol types: the PaymentRequired schema of the x402 spec
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Deserialize)]
