@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
+  <!-- How a send works. Animated with SMIL so it plays inside a GitHub README. Brand: void/gold/pale/mist. -->
+  <rect width="1200" height="300" fill="#0B0D12"/>
+
+  <!-- rail -->
+  <line x1="90" y1="150" x2="1110" y2="150" stroke="#1A1F2B" stroke-width="2"/>
+
+  <!-- stations -->
+  <g font-size="13" fill="#9AA3B2" text-anchor="middle" letter-spacing="1">
+    <g>
+      <circle cx="120" cy="150" r="22" fill="#1A1F2B" stroke="#F2C14E" stroke-width="1.5"/>
+      <text x="120" y="155" fill="#F2C14E" font-weight="700">A</text>
+      <text x="120" y="205">agent</text>
+      <text x="120" y="223" font-size="11">propose</text>
+    </g>
+    <g>
+      <rect x="300" y="118" width="120" height="64" rx="8" fill="#1A1F2B" stroke="#F2C14E" stroke-width="1.5"/>
+      <text x="360" y="146" fill="#F4F1EA">policy</text>
+      <text x="360" y="166" font-size="11">caps · allowlist</text>
+      <text x="360" y="223" font-size="11">no seed loaded yet</text>
+    </g>
+    <g>
+      <rect x="530" y="118" width="120" height="64" rx="8" fill="#1A1F2B" stroke="#9AA3B2" stroke-width="1.5"/>
+      <text x="590" y="146" fill="#F4F1EA">operator</text>
+      <text x="590" y="166" font-size="11">above threshold</text>
+      <text x="590" y="223" font-size="11">a channel the agent cannot call</text>
+    </g>
+    <g>
+      <rect x="760" y="118" width="120" height="64" rx="8" fill="#1A1F2B" stroke="#F2C14E" stroke-width="1.5"/>
+      <text x="820" y="146" fill="#F4F1EA">vault</text>
+      <text x="820" y="166" font-size="11">seed, only now</text>
+      <text x="820" y="223" font-size="11">sign · zeroise</text>
+    </g>
+    <g>
+      <circle cx="1080" cy="150" r="22" fill="#1A1F2B" stroke="#F2C14E" stroke-width="1.5"/>
+      <text x="1080" y="155" fill="#F2C14E" font-weight="700">Z</text>
+      <text x="1080" y="205">zcash</text>
+      <text x="1080" y="223" font-size="11">broadcast · audit row</text>
+    </g>
+  </g>
+
+  <!-- refused branch -->
+  <g font-size="11" fill="#9AA3B2" text-anchor="middle">
+    <path d="M360 118 C360 70, 360 70, 360 62" stroke="#1A1F2B" stroke-width="2" fill="none"/>
+    <text x="360" y="52" opacity="0.9">refused: audit row, nothing signed</text>
+  </g>
+
+  <!-- the payment, travelling the rail: 0-2s to policy, pause, 2.6-4.4s to operator, pause, 5-6.8s to vault, pause, 7.4-9s to zcash -->
+  <circle r="7" fill="#F2C14E">
+    <animate attributeName="cx" dur="10s" repeatCount="indefinite" calcMode="spline"
+      keyTimes="0;0.2;0.26;0.44;0.5;0.68;0.74;0.9;1"
+      values="142;300;300;530;530;760;760;1058;1058"
+      keySplines="0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1"/>
+    <animate attributeName="cy" dur="10s" repeatCount="indefinite" values="150"/>
+    <animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0;0.02;0.9;0.96;1" values="0;1;1;0;0"/>
+  </circle>
+
+  <!-- gate lights: each station glows while the payment sits at it -->
+  <rect x="300" y="118" width="120" height="64" rx="8" fill="#F2C14E" opacity="0">
+    <animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0;0.2;0.23;0.26;0.27;1" values="0;0;0.16;0.16;0;0"/>
+  </rect>
+  <rect x="530" y="118" width="120" height="64" rx="8" fill="#9AA3B2" opacity="0">
+    <animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0;0.44;0.47;0.5;0.51;1" values="0;0;0.14;0.14;0;0"/>
+  </rect>
+  <rect x="760" y="118" width="120" height="64" rx="8" fill="#F2C14E" opacity="0">
+    <animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0;0.68;0.71;0.74;0.75;1" values="0;0;0.16;0.16;0;0"/>
+  </rect>
+  <circle cx="1080" cy="150" r="22" fill="#F2C14E" opacity="0">
+    <animate attributeName="opacity" dur="10s" repeatCount="indefinite" keyTimes="0;0.9;0.92;0.96;1" values="0;0;0.25;0.25;0"/>
+  </circle>
+
+  <!-- caption -->
+  <text x="600" y="272" font-size="12" fill="#9AA3B2" text-anchor="middle" letter-spacing="2">PROPOSE · POLICY · APPROVE · SIGN · BROADCAST — THE SEED IS THE LAST THING TOUCHED</text>
+</svg>
