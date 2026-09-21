@@ -29,6 +29,10 @@ versions follow [Semantic Versioning](https://semver.org/). Nothing has been rel
 - The parent's swap affiliate key and partner token.
 
 ### Security
+- `wallet restore` takes the seed phrase on stdin instead of argv, stores it only in the
+  encrypted OWS vault instead of a plaintext `.seed` file, refuses to overwrite an existing vault
+  wallet, and writes the default spending policy so a restored wallet is capped. The plaintext
+  seed-file fallback in the CLI is gone. Four tests; two mutation checks recorded.
 - Inherited from upstream's 2026-09-10 remediation: MCP self-unlock and self-approve tools
   removed, durable daily-spend reservations, confirmations bound to unpredictable proposal IDs.
 - Known open items are listed in `SECURITY.md` and are the next work.

@@ -29,10 +29,11 @@ Holds on the current code (verified by reading, not yet by running):
   self-unlock and self-approve tools were removed upstream on 2026-09-10.
 - Daily spending uses durable reservations; a corrupt policy file refuses to spend.
 - The vault is scrypt + AES-256-GCM; the npm installer verifies SHA-256 checksums.
+- `wallet restore` reads the seed from stdin, stores it only in the vault, and writes the default
+  policy; the CLI never reads a seed from a file in the data directory. Tested, with a mutation
+  check (2026-09-21).
 
 Does **not** hold yet (scheduled, in severity order):
-- `wallet restore` takes the seed phrase on the command line and keeps a plaintext copy in the
-  data directory; restored wallets start with no policy file.
 - A max-amount send skips the policy check.
 - A missing policy file means no limits; a zero in the policy means unlimited, not zero.
 - Policy files, the audit database, and `policy set` are writable by the same OS user as the agent.

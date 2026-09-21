@@ -126,11 +126,9 @@ enum WalletCmd {
     Init,
 
     /// Restore wallet from an existing seed phrase
+    /// Restore a wallet from a seed phrase read from stdin (one line, 24 words). The phrase is
+    /// stored only in the encrypted OWS vault; it is never taken on the command line.
     Restore {
-        /// 24-word BIP39 seed phrase
-        #[arg(long)]
-        seed: String,
-
         /// Wallet birthday (block height to scan from)
         #[arg(long, default_value_t = 419200)]
         birthday: u32,
@@ -433,7 +431,7 @@ async fn main() {
         }
         Commands::Wallet(sub) => match sub {
             WalletCmd::Init => wallet::cmd_wallet_init(&cfg).await,
-            WalletCmd::Restore { seed, birthday } => wallet::cmd_wallet_restore(&cfg, &seed, birthday).await,
+            WalletCmd::Restore { birthday } => wallet::cmd_wallet_restore(&cfg, birthday).await,
             WalletCmd::Delete { confirm } => wallet::cmd_wallet_delete(&cfg, confirm).await,
         },
         Commands::Sync(sub) => match sub {
