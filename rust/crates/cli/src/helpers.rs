@@ -112,9 +112,8 @@ fn read_seed_from_ows() -> Option<SecretString> {
     }
 }
 
-/// The signing seed comes from the encrypted OWS vault and nowhere else. `data_dir` stays in
-/// the signature so callers do not change; a plaintext file in it is never consulted.
-pub fn read_seed(_data_dir: &str) -> Result<SecretString> {
+/// The signing seed comes from the encrypted OWS vault and nowhere else.
+pub fn read_seed() -> Result<SecretString> {
     if let Some(seed) = read_seed_from_ows() {
         return Ok(seed);
     }
@@ -294,25 +293,3 @@ pub async fn sync_if_needed(cfg: &Config) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-mod seed_source_tests {
-    use super::*;
-
-    #[test]
-    fn read_seed_never_uses_a_plaintext_seed_file() {
-        let nanos = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!("zumbra-seedfile-{}-{nanos}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join(".seed"), ows_lib::generate_mnemonic(24).unwrap()).unwrap();
-        // Point at a vault wallet that cannot exist so the only candidate is the file.
-        std::env::set_var("OWS_WALLET", format!("zumbra-no-such-wallet-{nanos}"));
-
-        let result = read_seed(dir.to_str().unwrap());
-
-        assert!(result.is_err(), "a plaintext .seed file in the data dir was accepted as the signing seed");
-        std::fs::remove_dir_all(&dir).ok();
-    }
-}

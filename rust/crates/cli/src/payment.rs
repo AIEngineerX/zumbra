@@ -103,7 +103,7 @@ pub async fn cmd_x402_pay(
         );
     }
 
-    let seed = read_seed(&cfg.data_dir)?;
+    let seed = read_seed()?;
     let txid = match zumbra_engine::send::confirm_send(&seed).await {
         Ok(txid) => {
             zumbra_engine::policy::record_confirm();

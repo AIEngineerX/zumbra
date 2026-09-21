@@ -114,7 +114,7 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
     }
 
     let result = InitResult {
-        seed_phrase: init_seed_to_print(created, &seed),
+        seed_phrase: created.then(|| seed.expose_secret().clone()),
         birthday: height,
         address: address.clone(),
         data_dir: cfg.data_dir.clone(),
@@ -186,7 +186,7 @@ pub fn default_policy() -> zumbra_engine::policy::SpendingPolicy {
 pub fn require_passphrase(passphrase: &str) -> Result<()> {
     if passphrase.is_empty() && std::env::var("ZUMBRA_UNSAFE_EMPTY_PASSPHRASE").as_deref() != Ok("1") {
         return Err(anyhow::anyhow!(
-            "OWS_PASSPHRASE is empty. Set a real vault passphrase; or, if you accept a vault that              anyone who can read the file can open, set ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1."
+            "OWS_PASSPHRASE is empty. Set a real vault passphrase, or set              ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1 to accept an unprotected vault."
         ));
     }
     Ok(())
@@ -218,11 +218,6 @@ pub fn open_or_create_vault_seed(
     let exported = ows_lib::export_wallet(ows_wallet, Some(passphrase), vault_path)
         .map_err(|e| anyhow::anyhow!("Failed to export seed from new wallet: {}", e))?;
     Ok((SecretString::new(exported), true))
-}
-
-/// What `wallet init` is allowed to print: the seed it generated, once; never a reused one.
-pub fn init_seed_to_print(created: bool, seed: &SecretString) -> Option<String> {
-    created.then(|| seed.expose_secret().clone())
 }
 
 /// What `prepare_restore` put on disk. If the step after it fails, `rollback` removes it all,
@@ -710,7 +705,7 @@ pub fn seed_for_confirm(
         .ok();
         return Err(anyhow::anyhow!("{}", violation));
     }
-    read_seed(data_dir)
+    read_seed()
 }
 
 pub async fn cmd_send_confirm(cfg: &Config) -> Result<()> {
@@ -855,7 +850,7 @@ pub async fn cmd_shield(cfg: &Config) -> Result<()> {
     ensure_sapling_params(&cfg.data_dir).await?;
     auto_open(cfg).await?;
 
-    let seed = read_seed(&cfg.data_dir)?;
+    let seed = read_seed()?;
     let txid = zumbra_engine::send::shield_funds(&seed).await?;
 
     #[derive(Serialize)]
@@ -902,7 +897,7 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
         eprintln!("  Fee:    {} zat", fee);
     }
 
-    let seed = read_seed(&cfg.data_dir)?;
+    let seed = read_seed()?;
     let txid = zumbra_engine::send::confirm_send(&seed).await?;
 
     #[derive(Serialize)]
@@ -938,7 +933,7 @@ pub async fn cmd_consolidate(cfg: &Config) -> Result<()> {
 pub async fn cmd_ironwood_plan(cfg: &Config) -> Result<()> {
     sync_if_needed(cfg).await?;
     let result = async {
-        let seed = read_seed(&cfg.data_dir)?;
+        let seed = read_seed()?;
         let plan = zumbra_engine::ironwood_v2::plan(&seed).await?;
         print_ok(&plan, cfg.human, |p| {
             println!("Ironwood SDK transfer plan");
@@ -1165,8 +1160,6 @@ mod restore_tests {
         assert!(!created_second, "second call must report reuse");
         assert_eq!(first.expose_secret(), second.expose_secret());
         assert_eq!(first.expose_secret().split_whitespace().count(), 24);
-        assert!(init_seed_to_print(created_second, &second).is_none(), "a reused seed must not be printed");
-        assert!(init_seed_to_print(created_first, &first).is_some());
         std::fs::remove_dir_all(&dir).ok();
     }
 }

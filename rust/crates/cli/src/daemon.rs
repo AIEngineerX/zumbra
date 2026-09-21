@@ -68,7 +68,7 @@ pub async fn cmd_start(cfg: &Config) -> Result<()> {
     ensure_data_dir(&cfg.data_dir)?;
     write_pid(&cfg.data_dir);
 
-    let seed_str = read_seed(&cfg.data_dir)?;
+    let seed_str = read_seed()?;
     use secrecy::ExposeSecret;
     let seed_value = seed_str.expose_secret().to_string();
 
@@ -201,7 +201,7 @@ async fn handle_ipc_command(
         }
 
         "unlock" => {
-            let seed_value = match crate::helpers::read_seed(data_dir) {
+            let seed_value = match crate::helpers::read_seed() {
                 Ok(seed) => secrecy::ExposeSecret::expose_secret(&seed).to_string(),
                 Err(e) => {
                     return format!(

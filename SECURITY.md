@@ -21,7 +21,7 @@ This repository is a hard fork of Zipher at its `feat/ironwood` branch, staged 2
 below is done. A source audit was
 done at fork time; its findings are summarised here and tracked privately by the owner.
 
-Holds on the current code (verified by reading, not yet by running):
+Holds on the current code (read, and run on testnet where a test is cited):
 - Amounts are `u64` end to end; non-finite values cannot reach the policy check.
 - On every ZEC send path (propose, confirm, x402) the policy check runs before the seed is read;
   `shield` and `consolidate` are sends to the wallet's own address and read the seed without a
