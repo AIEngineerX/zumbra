@@ -719,7 +719,10 @@ impl ServerHandler for ZumbraMcpServer {
         info.description = Some("Headless Zcash wallet with encrypted vault, spending policy, and x402 paywall access".into());
         info.website_url = Some("https://github.com/AIEngineerX/zumbra".into());
 
-        ServerInfo::default()
+        // Without this, clients never ask for the tool list: the server looked connected and empty.
+        let mut server_info = ServerInfo::default();
+        server_info.capabilities = rmcp::model::ServerCapabilities::builder().enable_tools().build();
+        server_info
             .with_server_info(info)
             .with_instructions(
                 "Zumbra: headless shielded Zcash wallet for AI agents. \
@@ -928,6 +931,22 @@ mod security_tests {
         assert!(!r.contains(APPROVAL_REQUIRED), "with a valid approval confirm must get past the gate: {r}");
         assert!(!dir.join("approvals").join("p-big.json").exists(), "the approval must be consumed");
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A client only asks for the tool list if `initialize` says the server has tools. Without
+    /// this capability, Claude Code and Hermes both connected and saw zero tools.
+    #[test]
+    fn initialize_advertises_the_tools_capability() {
+        let server = ZumbraMcpServer {
+            data_dir: std::env::temp_dir().to_string_lossy().to_string(),
+            seed: Arc::new(RwLock::new(None)),
+            locked: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            network: Network::TestNetwork,
+            seed_source: Arc::new(SeedSource::None),
+            reviewed_send: Arc::new(tokio::sync::Mutex::new(None)),
+        };
+        let info = server.get_info();
+        assert!(info.capabilities.tools.is_some(), "initialize must advertise tools: {:?}", info.capabilities);
     }
 
     #[test]

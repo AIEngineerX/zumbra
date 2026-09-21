@@ -46,6 +46,11 @@ in it.
   threshold above the cap, so the approval step could never trigger on a fresh wallet).
   `daily_limit` stays 0.1 ZEC. Test.
 
+### Fixed
+- `zumbra-mcp` now advertises the `tools` capability in its `initialize` response. Without it,
+  spec-following clients (Claude Code, Hermes) connected and listed zero tools; only a client that
+  called `tools/list` regardless ever saw them. Test.
+
 ### Security
 - `wallet restore` takes the seed phrase on stdin instead of argv, stores it only in the
   encrypted OWS vault instead of a plaintext `.seed` file, refuses to overwrite an existing vault
