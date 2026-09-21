@@ -88,7 +88,7 @@ render(doc(1600, 900,
 
 // 5b. Security card: what holds and what does not, verbatim register of SECURITY.md
 const col = (x, y, title, items, titleFill) =>
-  mono(x, y, 22, title, titleFill) + items.map((t, i) => mono(x, y + 52 + i * 44, 24, t, PALE)).join("");
+  mono(x, y, 20, title, titleFill) + items.map((t, i) => mono(x, y + 50 + i * 44, 20, t, PALE)).join("");
 render(doc(1600, 900,
   mark(96, 84, 96) + word(220, 154, 56) +
   mono(96, 300, 20, "SECURITY.MD, THE SHORT VERSION", MIST) +
@@ -96,13 +96,13 @@ render(doc(1600, 900,
     "seed only in an encrypted vault",
     "policy before any key, on every path",
     "missing or corrupt policy: nothing spends",
-    "above threshold: operator signs at a terminal",
+    "above threshold: you sign at a terminal",
     "every refusal logged",
   ], GOLD) +
   col(860, 380, "DOES NOT HOLD YET", [
     "no independent audit",
     "zero in the policy means unlimited",
-    "policy file is only as safe as your OS user",
+    "policy file: only as safe as your OS user",
     "rate limit is per process on the CLI",
     "so: testnet, and nothing you cannot lose",
   ], MIST) +
