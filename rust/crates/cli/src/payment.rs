@@ -5,7 +5,6 @@ use serde::Serialize;
 use zcash_protocol::consensus::Network;
 
 use crate::helpers::*;
-use crate::market::{get_ows_evm_address, run_ows};
 use crate::{print_ok, Config};
 
 fn read_402_body(body: &Option<String>) -> Result<String> {

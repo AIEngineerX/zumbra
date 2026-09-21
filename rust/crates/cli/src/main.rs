@@ -211,27 +211,7 @@ enum SendCmd {
         to: String,
     },
 
-    /// Create a PCZT (unsigned transaction) for external signing via OWS
-    Pczt {
-        /// Destination address
-        #[arg(long)]
-        to: String,
 
-        /// Amount in zatoshis
-        #[arg(long)]
-        amount: u64,
-
-        /// Optional memo (shielded only)
-        #[arg(long)]
-        memo: Option<String>,
-    },
-
-    /// Store a signed PCZT back into the wallet DB (prevents double-spends)
-    StorePczt {
-        /// Hex-encoded signed PCZT bytes
-        #[arg(long)]
-        pczt: String,
-    },
 }
 
 #[derive(Subcommand)]
@@ -490,10 +470,6 @@ async fn main() {
             } => wallet::cmd_send_propose(&cfg, to, amount, max, memo, context_id, priority).await,
             SendCmd::Confirm => wallet::cmd_send_confirm(&cfg).await,
             SendCmd::Max { to } => wallet::cmd_send_max(&cfg, to).await,
-            SendCmd::Pczt { to, amount, memo } => {
-                market::cmd_send_pczt(&cfg, to, amount, memo).await
-            }
-            SendCmd::StorePczt { pczt } => wallet::cmd_store_signed_pczt(&cfg, pczt).await,
         },
         Commands::Shield => wallet::cmd_shield(&cfg).await,
         Commands::Consolidate => wallet::cmd_consolidate(&cfg).await,
