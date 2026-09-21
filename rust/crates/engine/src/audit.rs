@@ -156,13 +156,13 @@ fn spent_on(conn: &Connection) -> Result<u64> {
 
 /// Atomically check policy and reserve amount + fee BEFORE signing.
 pub fn reserve_spend(data_dir: &str, address: &str, amount: u64, fee: u64,
-    context_id: &Option<String>, policy: &crate::policy::SpendingPolicy) -> Result<i64> {
+    context_id: &Option<String>, policy: &crate::policy::SpendingPolicy, approved: bool) -> Result<i64> {
     let total = amount.checked_add(fee).ok_or_else(|| anyhow::anyhow!("Amount overflow"))?;
     let _ = i64::try_from(total)?;
     let mut conn = open_audit_db(data_dir)?;
     let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
     let spent = spent_on(&tx)?;
-    crate::policy::check_proposal(policy, address, total, context_id, spent)
+    crate::policy::check_proposal_approved(policy, address, total, context_id, spent, approved)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     tx.execute("INSERT INTO spend_reservations(address, amount, fee, context_id) VALUES (?1,?2,?3,?4)",
         rusqlite::params![address, amount, fee, context_id])?;
@@ -193,9 +193,9 @@ mod tests {
         log_event(d,"x402_pay",Some("a"),Some(5),Some(1),None,Some("x"),None).unwrap();
         assert_eq!(daily_spent(d).unwrap(),28);
         let policy=crate::policy::SpendingPolicy{daily_limit:100,..Default::default()};
-        let id=reserve_spend(d,"a",60,2,&None,&policy).unwrap();
+        let id=reserve_spend(d,"a",60,2,&None,&policy,false).unwrap();
         assert_eq!(daily_spent(d).unwrap(),90);
-        assert!(reserve_spend(d,"a",10,1,&None,&policy).is_err());
+        assert!(reserve_spend(d,"a",10,1,&None,&policy,false).is_err());
         settle_spend(d,id,"new").unwrap();
         log_event(d,"confirm_send",Some("a"),Some(60),Some(2),None,Some("new"),None).unwrap();
         assert_eq!(daily_spent(d).unwrap(),90);
@@ -214,7 +214,7 @@ mod tests {
         open_audit_db(path.to_str().unwrap()).unwrap();
         let workers:Vec<_>=(0..4).map(|_| {let p=path.clone();std::thread::spawn(move || {
             reserve_spend(p.to_str().unwrap(),"a",60,1,&None,
-                &crate::policy::SpendingPolicy{daily_limit:100,..Default::default()}).is_ok()
+                &crate::policy::SpendingPolicy{daily_limit:100,..Default::default()},false).is_ok()
         })}).collect();
         assert_eq!(workers.into_iter().filter_map(|t|t.join().ok()).filter(|ok|*ok).count(),1);
         assert_eq!(daily_spent(path.to_str().unwrap()).unwrap(),61);

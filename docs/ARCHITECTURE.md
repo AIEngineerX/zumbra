@@ -71,8 +71,10 @@ sequenceDiagram
         M-->>A: error code, nothing signed
     else above threshold
         P-->>M: approval required
-        M-->>A: refused today (operator channel not built yet)
-        Note over M,O: Design: the operator approves on a channel the agent cannot call
+        M-->>A: refused: "operator runs zumbra approve <id>"
+        O->>O: zumbra approve <id>: sees to/amount/fee, types passphrase, signs
+        A->>M: confirm_send(proposal_id) again
+        M->>M: verify signature with the operator's public key; consume the approval
     end
     M->>V: read seed
     V-->>M: seed
@@ -83,9 +85,9 @@ sequenceDiagram
 ```
 
 The order is the whole design: propose, policy, approve, sign. The seed is the last thing
-touched, never the first. Today a send above the approval threshold is refused outright; the
-operator approval step is the next thing being built, and [`SECURITY.md`](../SECURITY.md) says
-exactly what holds now.
+touched, never the first. Above the approval threshold the operator signs the exact proposal at
+their own terminal with a key the agent never holds; [`SECURITY.md`](../SECURITY.md) says exactly
+what holds now.
 
 ![How a send works](how-a-send-works.svg)
 
@@ -94,7 +96,7 @@ exactly what holds now.
 | Can | Cannot |
 |---|---|
 | read balance, addresses, history, sync state | change the policy through any tool |
-| propose a send and confirm it within the policy | approve its own above-threshold send |
+| propose a send and confirm it within the policy | approve its own above-threshold send (only `zumbra approve`, with the operator's passphrase, can) |
 | validate an address | unlock a locked wallet |
 | pay an x402 paywall within the policy | export, print or see the seed |
 
@@ -109,5 +111,7 @@ the wallet as a separate user from the agent; `SECURITY.md` lists this as an ope
 | `~/.zumbra/<network>/` | wallet database, audit log, pending proposal, policy |
 | `~/.ows/wallets/<name>.json` | the encrypted vault with the seed |
 | `policy.toml` | per-tx cap, daily cap, allowlist, approval threshold, in zatoshi |
+| `operator.key`, `operator.pub` | the operator's approval key: private half encrypted under a typed passphrase, public half in the clear |
+| `proposals/`, `approvals/` | recorded proposals for `zumbra approve` to show; signed, single-use approvals |
 
 Testnet and mainnet are separate directories and separate vault wallets. Start on testnet.

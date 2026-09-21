@@ -33,6 +33,14 @@ in it.
 - The PCZT export subcommands, which had no policy check.
 - The parent's swap affiliate key and partner token.
 
+### Added
+- Operator approval channel. `zumbra operator init` creates an Ed25519 key (private half
+  encrypted under a passphrase typed at the terminal); `zumbra approve <proposal_id>` shows the
+  proposal and signs it for a limited time. Sends above `approval_threshold` are proposed as
+  usual, then refused at confirm until a valid, single-use approval exists. The agent gets a
+  `proposal_id` and a `next_step` telling it what the operator must run; it has no tool to
+  approve. Tests on the engine, the CLI gate and the MCP gate, with mutation checks.
+
 ### Security
 - `wallet restore` takes the seed phrase on stdin instead of argv, stores it only in the
   encrypted OWS vault instead of a plaintext `.seed` file, refuses to overwrite an existing vault

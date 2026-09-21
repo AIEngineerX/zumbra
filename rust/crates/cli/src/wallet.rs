@@ -641,11 +641,15 @@ pub async fn cmd_send_propose(
     // For max sends, we don't know the amount until the engine produces the proposal,
     // so we skip the policy daily-limit check here. (The rate-limit check still runs
     // in cmd_send_confirm.)
+    let mut approval_required = false;
     if !is_max {
-        let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir).unwrap_or(0);
+        let daily_spent = zumbra_engine::audit::daily_spent(&cfg.data_dir)?;
         if let Err(violation) =
             zumbra_engine::policy::check_proposal(&policy, &to, amount, &context_id, daily_spent)
         {
+            if matches!(violation, zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. }) {
+                approval_required = true;
+            } else {
             zumbra_engine::audit::log_event(
                 &cfg.data_dir,
                 "propose_send",
@@ -658,6 +662,7 @@ pub async fn cmd_send_propose(
             )
             .ok();
             return Err(anyhow::anyhow!("{}", violation));
+            }
         }
     }
 
@@ -666,14 +671,23 @@ pub async fn cmd_send_propose(
     let (send_amount, fee, _) =
         zumbra_engine::send::propose_send(&to, amount, memo.clone(), is_max, priority).await?;
 
+    let proposal_id = uuid::Uuid::new_v4().to_string();
     let pending = PendingProposal {
+        id: proposal_id.clone(),
         address: to.clone(),
         amount: if is_max { send_amount } else { amount },
+        fee,
         memo: memo.clone(),
         is_max,
         context_id: context_id.clone(),
     };
     save_pending(&cfg.data_dir, &pending)?;
+    zumbra_engine::approval::record_proposal(&cfg.data_dir, &zumbra_engine::approval::Proposal {
+        id: proposal_id.clone(), address: to.clone(), amount: send_amount, fee,
+    })?;
+    if is_max && policy.approval_threshold > 0 && send_amount > policy.approval_threshold {
+        approval_required = true;
+    }
 
     zumbra_engine::audit::log_event(
         &cfg.data_dir,
@@ -689,25 +703,29 @@ pub async fn cmd_send_propose(
 
     #[derive(Serialize)]
     struct ProposalSummary {
+        proposal_id: String,
         address: String,
         send_amount: u64,
         fee: u64,
         total: u64,
         send_amount_zec: f64,
         fee_zec: f64,
+        approval_required: bool,
     }
 
     let summary = ProposalSummary {
+        proposal_id: proposal_id.clone(),
         address: to.clone(),
         send_amount,
         fee,
         total: send_amount + fee,
         send_amount_zec: send_amount as f64 / 1e8,
         fee_zec: fee as f64 / 1e8,
+        approval_required,
     };
 
     print_ok(summary, cfg.human, |s| {
-        println!("Proposal created:");
+        println!("Proposal {}:", s.proposal_id);
         println!("  To:     {}", s.address);
         println!(
             "  Amount: {:.8} ZEC ({} zat)",
@@ -716,7 +734,11 @@ pub async fn cmd_send_propose(
         println!("  Fee:    {:.8} ZEC ({} zat)", s.fee_zec, s.fee);
         println!("  Total:  {} zat", s.total);
         println!();
-        println!("Run `zumbra send confirm` to sign and broadcast.");
+        if s.approval_required {
+            println!("Above the approval threshold. The operator runs `zumbra approve {}`, then `zumbra send confirm`.", s.proposal_id);
+        } else {
+            println!("Run `zumbra send confirm` to sign and broadcast.");
+        }
     });
 
     zumbra_engine::wallet::close().await;
@@ -740,25 +762,40 @@ pub fn seed_for_confirm(
 ) -> Result<secrecy::SecretString> {
     let policy = spend_policy(data_dir)?;
     let daily_spent = zumbra_engine::audit::daily_spent(data_dir)?;
-    if let Err(violation) = zumbra_engine::policy::check_proposal(
+    let refusal: Option<String> = match zumbra_engine::policy::check_proposal(
         &policy,
         &pending.address,
         send_amount,
         &pending.context_id,
         daily_spent,
     ) {
+        Ok(()) => None,
+        Err(zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. }) => {
+            let proposal = zumbra_engine::approval::Proposal {
+                id: pending.id.clone(),
+                address: pending.address.clone(),
+                amount: send_amount,
+                fee: pending.fee,
+            };
+            zumbra_engine::approval::verify_and_consume(data_dir, &proposal, zumbra_engine::approval::now_unix())
+                .err()
+                .map(|e| e.to_string())
+        }
+        Err(violation) => Some(violation.to_string()),
+    };
+    if let Some(reason) = refusal {
         zumbra_engine::audit::log_event(
             data_dir,
             "confirm_send",
             Some(&pending.address),
             Some(send_amount),
-            None,
+            Some(pending.fee),
             pending.context_id.as_deref(),
             None,
-            Some(&violation.to_string()),
+            Some(&reason),
         )
         .ok();
-        return Err(anyhow::anyhow!("{}", violation));
+        return Err(anyhow::anyhow!("{}", reason));
     }
     read_seed()
 }
@@ -1059,8 +1096,10 @@ mod confirm_gate_tests {
         // If the seed were read first, this is the error we would see instead of the policy one.
         std::env::set_var("OWS_WALLET", format!("zumbra-no-such-wallet-{}", std::process::id()));
         let pending = PendingProposal {
+            id: "p-max".into(),
             address: "utest1placeholder".into(),
             amount: 0,
+            fee: 0,
             memo: None,
             is_max: true,
             context_id: None,
@@ -1080,10 +1119,40 @@ mod confirm_gate_tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
+    /// Above the threshold, confirm refuses until the operator has signed this exact proposal;
+    /// with the approval in place the gate passes and the seed is read.
+    #[test]
+    fn above_threshold_confirm_needs_an_operator_approval_then_passes() {
+        let dir = scratch("confirm-approval");
+        let data_dir = dir.to_str().unwrap();
+        let mut policy = default_policy();
+        policy.max_per_tx = 10_000;
+        policy.approval_threshold = 1_000;
+        zumbra_engine::policy::save_policy(data_dir, &policy).unwrap();
+        std::env::set_var("OWS_WALLET", format!("zumbra-no-such-wallet-{}", std::process::id()));
+        let pending = PendingProposal { id: "p-big".into(), address: "utest1big".into(), amount: 5_000, fee: 15, memo: None, is_max: false, context_id: None };
+
+        let err = seed_for_confirm(data_dir, &pending, 5_000).unwrap_err().to_string();
+        assert!(err.contains("APPROVAL_REQUIRED"), "expected an approval refusal, got: {err}");
+        assert!(err.contains("zumbra approve p-big") || err.contains("operator init"), "the refusal must say what the operator runs: {err}");
+        assert!(!err.contains("OWS"), "the seed was read before the approval check: {err}");
+
+        zumbra_engine::approval::operator_init(data_dir, "op-pass").unwrap();
+        let err = seed_for_confirm(data_dir, &pending, 5_000).unwrap_err().to_string();
+        assert!(err.contains("zumbra approve p-big"), "with a key but no approval the hint names the command: {err}");
+
+        let proposal = zumbra_engine::approval::Proposal { id: "p-big".into(), address: "utest1big".into(), amount: 5_000, fee: 15 };
+        zumbra_engine::approval::approve(data_dir, "op-pass", &proposal, 600, zumbra_engine::approval::now_unix()).unwrap();
+        let err = seed_for_confirm(data_dir, &pending, 5_000).unwrap_err().to_string();
+        assert!(err.contains("OWS"), "with a valid approval the gate must pass through to the seed: {err}");
+        assert!(!dir.join("approvals").join("p-big.json").exists(), "the approval must be consumed");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
     #[test]
     fn confirm_refuses_when_the_policy_file_is_corrupt_or_missing() {
         std::env::set_var("OWS_WALLET", format!("zumbra-no-such-wallet-{}", std::process::id()));
-        let pending = PendingProposal { address: "utest1x".into(), amount: 1, memo: None, is_max: false, context_id: None };
+        let pending = PendingProposal { id: "p-1".into(), address: "utest1x".into(), amount: 1, fee: 0, memo: None, is_max: false, context_id: None };
 
         let missing = scratch("confirm-missing");
         let err = seed_for_confirm(missing.to_str().unwrap(), &pending, 1).unwrap_err().to_string();

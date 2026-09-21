@@ -7,6 +7,7 @@ mod benchmark;
 mod daemon;
 mod helpers;
 mod payment;
+mod operator;
 mod policy;
 mod wallet;
 
@@ -83,6 +84,19 @@ enum Commands {
     /// Spending policy management
     #[command(subcommand)]
     Policy(PolicyCmd),
+
+    /// The operator's approval key for sends above the threshold
+    #[command(subcommand)]
+    Operator(OperatorCmd),
+
+    /// Approve one proposal above the threshold (operator only; passphrase read from stdin)
+    Approve {
+        /// The proposal id printed by `send propose` or returned by propose_send
+        proposal_id: String,
+        /// How long the approval stays valid
+        #[arg(long, default_value_t = 10)]
+        ttl_minutes: u64,
+    },
 
     /// View the audit log
     Audit {
@@ -210,6 +224,13 @@ enum SendCmd {
     },
 
 
+}
+
+#[derive(Subcommand)]
+enum OperatorCmd {
+    /// Create the operator key: private half encrypted under a passphrase typed here, public half
+    /// in the data directory. The agent never gets a tool for this.
+    Init,
 }
 
 #[derive(Subcommand)]
@@ -471,6 +492,10 @@ async fn main() {
         },
         Commands::Shield => wallet::cmd_shield(&cfg).await,
         Commands::Consolidate => wallet::cmd_consolidate(&cfg).await,
+        Commands::Operator(sub) => match sub {
+            OperatorCmd::Init => operator::cmd_operator_init(&cfg).await,
+        },
+        Commands::Approve { proposal_id, ttl_minutes } => operator::cmd_approve(&cfg, proposal_id, ttl_minutes).await,
         Commands::Policy(sub) => match sub {
             PolicyCmd::Show => policy::cmd_policy_show(&cfg).await,
             PolicyCmd::Set { field, value } => policy::cmd_policy_set(&cfg, field, value).await,

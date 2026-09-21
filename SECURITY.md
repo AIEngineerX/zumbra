@@ -32,6 +32,11 @@ Holds on the current code (read, and run on testnet where a test is cited):
 - Daily spending uses durable reservations. A missing, unreadable or corrupt policy file refuses
   to spend on every CLI and MCP spend path (tested 2026-09-21).
 - The vault is scrypt + AES-256-GCM; the npm installer verifies SHA-256 checksums.
+- Above the approval threshold, confirm is refused until the operator has signed that exact
+  proposal (id, address, amount, fee, expiry) with an Ed25519 key whose private half is
+  encrypted under a passphrase typed at the operator's terminal and never placed in an env var
+  or a config. The wallet holds only the public half. An approval is single-use and expires.
+  There is no MCP tool that creates one. Tested, with mutation checks (2026-09-21).
 - An empty vault passphrase is refused wherever a seed would be stored, unless the operator sets
   `ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1` on purpose (tested 2026-09-21).
 - `wallet restore` reads the seed from stdin, stores it only in the vault, and writes the default
@@ -43,9 +48,9 @@ Holds on the current code (read, and run on testnet where a test is cited):
 
 Does **not** hold yet (scheduled, in severity order):
 - A zero in the policy means unlimited, not zero.
-- Policy files, the audit database, and `policy set` are writable by the same OS user as the agent.
-- Above the approval threshold a send is blocked outright; the operator approval channel that
-  replaces the parent's relay is not built yet.
+- Policy files, the audit database, `policy set`, and the operator's public key are writable by
+  the same OS user as the agent. Run the wallet as a separate user from the agent until
+  privilege separation is enforced by the wallet itself.
 - Untrusted strings (memos, 402 bodies) are not sanitised before reaching the model.
 
 Removed rather than fixed, 2026-09-21: the PCZT export path, the EVM, swap and prediction-market

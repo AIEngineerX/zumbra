@@ -210,7 +210,7 @@ struct ZumbraMcpServer {
 impl ZumbraMcpServer {
     // Caller holds PAYMENT_OPERATION from proposal creation through broadcast.
     async fn confirm_accounted(&self, seed: &SecretString, address: &str,
-        amount: u64, fee: u64, context_id: &Option<String>) -> Result<String> {
+        amount: u64, fee: u64, context_id: &Option<String>, approved: bool) -> Result<String> {
         if self.locked.load(std::sync::atomic::Ordering::SeqCst) {
             anyhow::bail!("WALLET_LOCKED");
         }
@@ -218,7 +218,7 @@ impl ZumbraMcpServer {
         zumbra_engine::policy::check_rate_limit(&policy)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
         let reservation = zumbra_engine::audit::reserve_spend(
-            &self.data_dir, address, amount, fee, context_id, &policy)?;
+            &self.data_dir, address, amount, fee, context_id, &policy, approved)?;
         // A failure may be an ambiguous broadcast. Never release its reserved
         // budget automatically, or retry the payment on behalf of the caller.
         let txid = zumbra_engine::send::confirm_send(seed).await?;
@@ -305,11 +305,13 @@ impl ZumbraMcpServer {
             Ok(v) => v, Err(e) => return err_response(&e),
         };
 
+        let mut approval_required = false;
         if let Err(violation) = zumbra_engine::policy::check_proposal(
             &policy, &params.address, params.amount, &params.context_id, daily_spent,
         ) {
-
-
+            if matches!(violation, zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. }) {
+                approval_required = true;
+            } else {
             zumbra_engine::audit::log_event(
                 &self.data_dir, "propose_send", Some(&params.address),
                 Some(params.amount), None, params.context_id.as_deref(),
@@ -322,11 +324,15 @@ impl ZumbraMcpServer {
                 _ => POLICY_EXCEEDED,
             };
             return err_code_response(code, &violation.to_string());
+            }
         }
 
         match zumbra_engine::send::propose_send(&params.address, params.amount, params.memo, false, false).await {
             Ok((send_amount, fee, _)) => {
                 let proposal_id = uuid::Uuid::new_v4().to_string();
+                zumbra_engine::approval::record_proposal(&self.data_dir, &zumbra_engine::approval::Proposal {
+                    id: proposal_id.clone(), address: params.address.clone(), amount: send_amount, fee,
+                }).ok();
                 *self.reviewed_send.lock().await = Some(ReviewedSend {
                     id: proposal_id.clone(),
                     address: params.address.clone(), amount: send_amount, fee,
@@ -347,8 +353,17 @@ impl ZumbraMcpServer {
                     total: u64,
                     send_amount_zec: f64,
                     fee_zec: f64,
+                    /// True when this send is above the operator's approval threshold: confirm_send
+                    /// will be refused until the operator has run `zumbra approve <proposal_id>`.
+                    approval_required: bool,
+                    next_step: String,
                 }
 
+                let next_step = if approval_required {
+                    format!("Above the approval threshold. Ask the operator to run `zumbra approve {}` at their terminal, then call confirm_send.", proposal_id)
+                } else {
+                    "Call confirm_send with this proposal_id.".to_string()
+                };
                 ok_response(ProposalResult {
                     proposal_id,
                     address: params.address,
@@ -357,6 +372,8 @@ impl ZumbraMcpServer {
                     total: send_amount + fee,
                     send_amount_zec: send_amount as f64 / 1e8,
                     fee_zec: fee as f64 / 1e8,
+                    approval_required,
+                    next_step,
                 })
             }
             Err(e) => {
@@ -398,16 +415,51 @@ impl ZumbraMcpServer {
             return err_code_response(POLICY_EXCEEDED, &violation.to_string());
         }
 
+        // Operator approval gate. Runs before the proposal is taken, so a refusal here leaves it
+        // in place for the agent to retry once the operator has signed.
+        let approved = {
+            let pending = self.reviewed_send.lock().await;
+            let p = match pending.as_ref() {
+                Some(p) if p.id == params.proposal_id && p.context_id == params.context_id => p,
+                _ => return err_code_response(INVALID_PROPOSAL, "Proposal replaced or context changed. Review again."),
+            };
+            let daily_spent = match zumbra_engine::audit::daily_spent(&self.data_dir) {
+                Ok(v) => v, Err(e) => return err_response(&e),
+            };
+            match zumbra_engine::policy::check_proposal(&policy, &p.address, p.amount, &p.context_id, daily_spent) {
+                Ok(()) => false,
+                Err(zumbra_engine::policy::PolicyViolation::ApprovalRequired { .. }) => {
+                    let proposal = zumbra_engine::approval::Proposal {
+                        id: p.id.clone(), address: p.address.clone(), amount: p.amount, fee: p.fee,
+                    };
+                    match zumbra_engine::approval::verify_and_consume(&self.data_dir, &proposal, zumbra_engine::approval::now_unix()) {
+                        Ok(()) => true,
+                        Err(e) => {
+                            zumbra_engine::audit::log_event(
+                                &self.data_dir, "confirm_send", Some(&p.address),
+                                Some(p.amount), Some(p.fee), params.context_id.as_deref(),
+                                None, Some(&e.to_string()),
+                            ).ok();
+                            return err_code_response(APPROVAL_REQUIRED, &e.to_string());
+                        }
+                    }
+                }
+                Err(violation) => {
+                    zumbra_engine::audit::log_event(
+                        &self.data_dir, "confirm_send", Some(&p.address),
+                        Some(p.amount), Some(p.fee), params.context_id.as_deref(),
+                        None, Some(&violation.to_string()),
+                    ).ok();
+                    return err_code_response(POLICY_EXCEEDED, &violation.to_string());
+                }
+            }
+        };
         let reviewed = {
             let mut pending = self.reviewed_send.lock().await;
-            match pending.as_ref() {
-                Some(p) if p.id == params.proposal_id && p.context_id == params.context_id => {}
-                _ => return err_code_response(INVALID_PROPOSAL, "Proposal replaced or context changed. Review again."),
-            }
             pending.take().expect("matched pending proposal")
         };
         match self.confirm_accounted(&seed_str, &reviewed.address, reviewed.amount,
-            reviewed.fee, &reviewed.context_id).await {
+            reviewed.fee, &reviewed.context_id, approved).await {
             Ok(txid) => {
                 zumbra_engine::policy::record_confirm();
                 zumbra_engine::audit::log_event(
@@ -617,7 +669,7 @@ impl ZumbraMcpServer {
             }
         };
 
-        match self.confirm_accounted(&seed_str, &address, send_amount, fee, &params.context_id).await {
+        match self.confirm_accounted(&seed_str, &address, send_amount, fee, &params.context_id, false).await {
             Ok(txid) => {
                 zumbra_engine::policy::record_confirm();
                 zumbra_engine::audit::log_event(
@@ -673,7 +725,7 @@ impl ServerHandler for ZumbraMcpServer {
                 "Zumbra: headless shielded Zcash wallet for AI agents. \
                  The seed lives in an encrypted vault on this machine; never pass it as a tool argument. \
                  Sends are two-step: propose_send, then confirm_send. The operator's spending policy runs before anything is signed and cannot be changed from here. \
-                 Above the approval threshold a send is refused today; operator approval is not built yet, and there is no MCP approval tool. \
+                 Above the approval threshold, propose_send still returns a proposal_id and confirm_send is refused until the operator has run `zumbra approve <proposal_id>` at their own terminal; there is no MCP approval tool. \
                  wallet_lock clears the seed from memory; only an operator restart can bring it back. \
                  pay_x402 pays an x402 paywall from a 402 response body, within the same policy. \
                  Governance voting is unavailable in this version."
@@ -840,6 +892,42 @@ mod security_tests {
         for v in ["0", "false", "no", "off", "n", "f", ""] {
             assert!(!env_truthy(v), "{v} should mean mainnet");
         }
+    }
+
+    /// Above the threshold, confirm_send tells the agent what the operator must run and keeps
+    /// the proposal; once the operator has signed it, confirm proceeds to signing.
+    #[tokio::test]
+    async fn confirm_above_threshold_waits_for_the_operator_and_then_proceeds() {
+        let dir = std::env::temp_dir().join(format!("zumbra-mcp-approval-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let dd = dir.to_str().unwrap().to_string();
+        let mut policy = zumbra_engine::policy::SpendingPolicy::default();
+        policy.max_per_tx = 1_000_000; policy.daily_limit = 10_000_000; policy.approval_threshold = 5;
+        zumbra_engine::policy::save_policy(&dd, &policy).unwrap();
+        let server = ZumbraMcpServer {
+            data_dir: dd.clone(),
+            seed: Arc::new(RwLock::new(Some(SecretString::new("dummy-test-secret".into())))),
+            locked: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            network: Network::MainNetwork,
+            seed_source: Arc::new(SeedSource::None),
+            reviewed_send: Arc::new(tokio::sync::Mutex::new(Some(ReviewedSend {
+                id: "p-big".into(), address: "utest1big".into(), amount: 10, fee: 1, context_id: None,
+            }))),
+        };
+        let params = || Parameters(ConfirmSendParams { proposal_id: "p-big".into(), context_id: None });
+
+        let r = server.confirm_send(params()).await;
+        assert!(r.contains(APPROVAL_REQUIRED), "above threshold must ask for the operator: {r}");
+        assert!(r.contains("zumbra approve p-big") || r.contains("operator init"), "must say what the operator runs: {r}");
+        assert!(server.reviewed_send.lock().await.is_some(), "the proposal must survive an approval refusal");
+
+        zumbra_engine::approval::operator_init(&dd, "op-pass").unwrap();
+        let proposal = zumbra_engine::approval::Proposal { id: "p-big".into(), address: "utest1big".into(), amount: 10, fee: 1 };
+        zumbra_engine::approval::approve(&dd, "op-pass", &proposal, 600, zumbra_engine::approval::now_unix()).unwrap();
+        let r = server.confirm_send(params()).await;
+        assert!(!r.contains(APPROVAL_REQUIRED), "with a valid approval confirm must get past the gate: {r}");
+        assert!(!dir.join("approvals").join("p-big.json").exists(), "the approval must be consumed");
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

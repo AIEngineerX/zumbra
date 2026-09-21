@@ -130,8 +130,14 @@ pub fn read_seed() -> Result<SecretString> {
 
 #[derive(Serialize, serde::Deserialize)]
 pub struct PendingProposal {
+    /// Set at propose time; the operator approves this id. Empty on files from older builds.
+    #[serde(default)]
+    pub id: String,
     pub address: String,
     pub amount: u64,
+    /// The fee the engine quoted at propose time; part of what the operator signs.
+    #[serde(default)]
+    pub fee: u64,
     pub memo: Option<String>,
     pub is_max: bool,
     pub context_id: Option<String>,

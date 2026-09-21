@@ -32,8 +32,9 @@ agent can and cannot do are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 ## What it will be
 
 **The agent wallet.** A headless Zcash wallet: a Rust engine, a CLI, and an MCP server that any
-MCP client (Hermes, OpenClaw, Claude, Cursor) can use. The spending policy and the human
-approval step are enforced by something the agent cannot edit or call. Shielded sends only.
+MCP client (Hermes, OpenClaw, Claude, Cursor) can use. The spending policy is a file the agent
+has no tool for, and a send above your threshold waits for a signature from a key only you can
+unlock, at your own terminal. Shielded sends only.
 No cloud, no custody, no telemetry, no baked-in third-party endpoints.
 
 ## Scope
@@ -102,8 +103,8 @@ In order, each with a done-criterion rather than a date:
 3. **Make it safe for an agent.** Close the listed gaps in [`SECURITY.md`](SECURITY.md), each
    with a test that fails on the fork point and passes here.
 4. **Privacy posture.** Tor/SOCKS for the light client, encrypted wallet database.
-5. **First agent on mainnet.** Capped wallet, operator approval over a channel the agent cannot
-   call, prompt-injection tests recorded as integration tests.
+5. **First agent on mainnet.** Capped wallet, the operator approval channel (shipped 2026-09-21)
+   exercised end to end, prompt-injection tests recorded as integration tests.
 
 ## License
 

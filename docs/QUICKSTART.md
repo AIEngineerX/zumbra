@@ -83,13 +83,34 @@ zumbra --testnet send confirm
 
 `propose` builds the transaction with no seed loaded and reports amount and fee. `confirm` runs
 the policy against the amount the engine will actually send, and only if it passes reads the
-seed, signs, broadcasts, and writes the audit row. A send above the approval threshold is refused
-today; the operator approval step is the next thing being built.
+seed, signs, broadcasts, and writes the audit row. Above the approval threshold, confirm waits
+for you (next section).
 
 ```bash
 zumbra --testnet audit --limit 20
 zumbra --testnet audit --since 2026-09-01
 ```
+
+## 4b. Sends above the threshold need you
+
+Once, from your own terminal (the passphrase is typed, never stored or exported):
+
+```bash
+zumbra --testnet operator init
+```
+
+When a send is above `approval_threshold`, propose still works and prints a proposal id with
+`approval_required: true`. Confirm is refused until you sign that exact proposal:
+
+```bash
+zumbra --testnet approve <proposal_id>          # shows to, amount, fee; asks for the passphrase
+zumbra --testnet send confirm                    # now passes the gate, reads the seed, signs
+```
+
+An approval is for one proposal, is used once, and expires (10 minutes by default,
+`--ttl-minutes` to change). The agent sees the same flow over MCP: propose_send returns
+`next_step` naming the command you must run; confirm_send is refused with the same hint until
+you have run it. Nothing the agent can call creates an approval.
 
 ## 5. The agent
 
@@ -114,8 +135,8 @@ zumbra --testnet audit --since 2026-09-01
 The tools mirror the CLI's read and send commands: `wallet_status`, `get_balance`,
 `get_transactions`, `sync_status`, `validate_address`, `propose_send`, `confirm_send`,
 `wallet_lock`, `pay_x402`, plus the Ironwood pool-migration tools and `vote_eligibility`.
-Shielding transparent funds is an operator action: `zumbra shield` on the CLI. No tool unlocks
-the wallet, approves a send, or changes the policy. `wallet_lock` clears the seed from memory; only restarting the server from
+Shielding transparent funds and approving a send are operator actions on the CLI. No tool
+unlocks the wallet, approves a send, or changes the policy. `wallet_lock` clears the seed from memory; only restarting the server from
 your terminal brings it back.
 
 ## 6. Keep it running

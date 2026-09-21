@@ -272,6 +272,19 @@ pub fn check_proposal(
     context_id: &Option<String>,
     daily_spent: u64,
 ) -> std::result::Result<(), PolicyViolation> {
+    check_proposal_approved(policy, address, amount, context_id, daily_spent, false)
+}
+
+/// The same check, with `approved` meaning a valid operator approval has already been consumed
+/// for this exact proposal: the threshold is waived, every cap and the allowlist still apply.
+pub fn check_proposal_approved(
+    policy: &SpendingPolicy,
+    address: &str,
+    amount: u64,
+    context_id: &Option<String>,
+    daily_spent: u64,
+    approved: bool,
+) -> std::result::Result<(), PolicyViolation> {
     if policy.require_context_id {
         match context_id {
             None => return Err(PolicyViolation::ContextRequired),
@@ -301,7 +314,7 @@ pub fn check_proposal(
         });
     }
 
-    if policy.approval_threshold > 0 && amount > policy.approval_threshold {
+    if !approved && policy.approval_threshold > 0 && amount > policy.approval_threshold {
         return Err(PolicyViolation::ApprovalRequired {
             amount,
             threshold: policy.approval_threshold,
@@ -339,6 +352,15 @@ mod loader_tests {
         let dir = std::env::temp_dir().join(format!("zumbra-policy-{tag}-{}-{nanos}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    /// An operator approval waives the threshold and nothing else.
+    #[test]
+    fn an_approval_waives_only_the_threshold() {
+        let p = SpendingPolicy { max_per_tx: 10_000, daily_limit: 100_000, min_spend_interval_ms: 0, require_context_id: false, approval_threshold: 1_000, allowlist: vec![] };
+        assert!(matches!(check_proposal_approved(&p, "a", 5_000, &None, 0, false), Err(PolicyViolation::ApprovalRequired { .. })));
+        assert!(check_proposal_approved(&p, "a", 5_000, &None, 0, true).is_ok());
+        assert!(matches!(check_proposal_approved(&p, "a", 50_000, &None, 0, true), Err(PolicyViolation::PerTxExceeded { .. })), "approval must not lift the per-tx cap");
     }
 
     #[test]
