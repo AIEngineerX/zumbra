@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/AIEngineerX/zumbra/security/advisories/new
+    about: Private advisory for anything touching keys, policy, approvals, the MCP server, or the vault.

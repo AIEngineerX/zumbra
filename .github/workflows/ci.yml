@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # gitleaks-action lists the PR's commits via the API on pull_request events. Without this the
+  # job fails with a 403 on every Dependabot PR (observed 2026-09-20, runs #35550704096 etc.).
+  pull-requests: read
+
+# Actions are pinned by commit SHA, not by tag. A tag can be moved; a SHA cannot.
+# Resolved 2026-09-20: checkout v4, gitleaks-action v2, rust-toolchain stable, cargo-deny-action v2.
+
+jobs:
+  secrets:
+    name: gitleaks (full history)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  hygiene:
+    name: no secrets-shaped files, no upstream leftovers in new code
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: tracked files that must never exist
+        run: |
+          set -e
+          bad=$(git ls-files | grep -iE '(^|/)\.env($|\.)|\.pem$|\.p12$|\.jks$|\.keystore$|key\.properties$|keypair.*\.json$|\.mnemonic$|\.seed$|(^|/)policy\.toml$' | grep -v '\.example' || true)
+          if [ -n "$bad" ]; then echo "$bad"; echo "::error::secret-shaped file is tracked"; exit 1; fi
+      - name: pre-public audit (notice only while private)
+        run: bash scripts/pre-public-audit.sh || echo "::warning::pre-public audit has findings; must be clean before the repo goes public"
+
+  deny:
+    # Non-blocking until a local build exists to tune deny.toml against.
+    # The day this job is green, drop continue-on-error and it becomes a gate.
+    name: cargo deny (advisories, licenses, sources)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          submodules: recursive
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
+        with:
+          manifest-path: rust/Cargo.toml
+          command: check advisories licenses sources bans
+
+  fmt:
+    # Non-blocking for the same reason as deny: vendored crates and the parent's formatting have
+    # not been run through rustfmt yet. Blocking once it is green.
+    name: rustfmt
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+        with:
+          components: rustfmt
+      - run: cargo fmt --all --check
+        working-directory: rust

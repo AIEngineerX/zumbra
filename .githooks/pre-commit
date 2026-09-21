@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Pre-commit: refuse to commit secrets or secret-shaped files.
+# Installed per clone by scripts/setup-hooks.sh (sets core.hooksPath to .githooks).
+# This is the local half of the control; CI runs gitleaks over full history as the other half.
+set -uo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+fail() { echo "pre-commit: BLOCKED — $1" >&2; exit 1; }
+
+# 1. File names that must never be committed, whatever they contain.
+bad=$(printf '%s\n' "$staged" | grep -iE '(^|/)\.env($|\.)|\.pem$|\.p12$|\.jks$|\.keystore$|key\.properties$|keypair.*\.json$|\.mnemonic$|\.seed$|(^|/)policy\.toml$|(^|/)sessions\.(json|enc)$|(^|/)audit\.sqlite$' | grep -v '\.example' || true)
+[ -n "$bad" ] && fail "secret-shaped file staged:
+$bad"
+
+# 2. Content patterns in the staged diff: API keys, private keys, 12/24-word seed phrases.
+added=$(git diff --cached -U0 -- $staged | grep -E '^\+' | grep -vE '^\+\+\+' || true)
+if printf '%s\n' "$added" | grep -qE 'BEGIN [A-Z ]*PRIVATE KEY|AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|gho_[A-Za-z0-9]{30,}|xox[baprs]-[A-Za-z0-9-]{10,}'; then
+  fail "staged diff contains a credential-shaped string"
+fi
+# Seed phrase heuristic: 12 or more lowercase 3-8 letter words in a row anywhere on one added
+# line, in any non-Markdown file (prose in docs legitimately has runs of short words).
+# Mutation-tested 2026-09-20: the first version anchored the run to the start of the line and
+# filtered by a filename that never appears in diff lines, so a comment-prefixed phrase went
+# through and into a commit.
+for f in $staged; do
+  case "$f" in *.md|*.markdown|*.txt) continue ;; esac
+  seedish=$(git diff --cached -U0 -- "$f" | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E '([a-z]{3,8} ){11,}[a-z]{3,8}' || true)
+  [ -n "$seedish" ] && fail "$f contains a seed-phrase-shaped line (12+ short lowercase words in a row):
+$(printf '%s\n' "$seedish" | head -3)"
+done
+
+# 3. gitleaks on the staged changes, if installed. Not installed is a warning, not a bypass.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --no-banner --redact >/dev/null 2>&1 || fail "gitleaks found a secret in the staged changes"
+else
+  echo "pre-commit: gitleaks not installed; only pattern checks ran. Install it: https://github.com/gitleaks/gitleaks" >&2
+fi
+
+exit 0

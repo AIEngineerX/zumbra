@@ -1,0 +1,53 @@
+# cargo-deny policy. Run: cargo deny check
+# CI runs this as a non-blocking notice until a local build exists to tune it against;
+# it becomes blocking the moment it is green once.
+
+[graph]
+all-features = false
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = [
+  # rsa 0.9.x Marvin timing side-channel, reachable only through Arti/Tor. No patched release
+  # exists. Upstream's 2026-09-10 review found no exposed private-RSA operation in this wallet.
+  # Re-evaluate at every cargo update; remove this line the day a fix ships.
+  "RUSTSEC-2023-0071",
+]
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "MPL-2.0",
+  "CC0-1.0",
+  "0BSD",
+  "OpenSSL",
+]
+exceptions = []
+
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+deny = [
+  # Nothing in this wallet should reach for a shell.
+  { name = "duct" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-git = []

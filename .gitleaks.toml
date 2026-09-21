@@ -1,0 +1,30 @@
+# gitleaks configuration. Extends the default ruleset; only the allowlist below is ours.
+#
+# Every entry here was inspected by hand on 2026-09-20 and is NOT a credential. Keep this list
+# short and specific. A broad allowlist is how a real leak gets waved through.
+
+title = "zumbra"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Inspected false positives in inherited history"
+
+paths = [
+  # CocoaPods lockfiles: every pod's SHA-1 checksum trips generic-api-key. 14 hits, all checksums.
+  '''ios/Podfile\.lock''',
+  '''macos/Podfile\.lock''',
+]
+
+regexes = [
+  # A SharedPreferences key name in the parent's Flutter app, not a key.
+  '''frost_pending_deletions_v1''',
+  # The name of a cipher, quoted in an audit document.
+  '''XChaCha20-Poly1305''',
+  # The parent project's NEAR Intents "distribution_channel" token (partner_id: cipherscan).
+  # It is a public affiliate identifier shipped in their app bundle, not a bearer secret, and it
+  # attributes swap fees to them. Zumbra removes it from the tree in Phase 1; it stays in history.
+  # Matched by its exact header+payload prefix so no other JWT is ever allowlisted by accident.
+  '''eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjIwMjUtMDEtMTItdjEifQ\.eyJ2IjoxLCJrZXlfdHlwZSI6ImRpc3Ry''',
+]
