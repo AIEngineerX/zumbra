@@ -26,8 +26,6 @@ Two things, built in this order:
    MCP client (Hermes, OpenClaw, Claude, Cursor) can use. The spending policy and the human
    approval step are enforced by something the agent cannot edit or call. Shielded sends only.
    No cloud, no custody, no telemetry, no baked-in third-party endpoints.
-2. **A site.** One static page: a single "ask" input over a local knowledge base, a human/agent
-   toggle, and links. No LLM behind it, nothing tracked.
 
 ## Scope
 
