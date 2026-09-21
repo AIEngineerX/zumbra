@@ -39,6 +39,14 @@ versions follow [Semantic Versioning](https://semver.org/). Nothing has been rel
 - A restore whose network step fails rolls back the vault entry and the policy file it staged, so
   the next `wallet init` cannot "reuse" the half-restored seed; and `wallet init` no longer prints
   a seed it did not just generate. Tests.
+- `wallet init` reaches the server before creating anything, and if the wallet cannot be built
+  after a vault seed was created, that unseen seed is removed rather than "reused" by the next
+  init. Restore and init share one rollback that also removes a partial database, keeps a policy
+  file the operator already had, and reports anything it could not remove. Tests.
+- `zumbra-mcp` reads `ZUMBRA_TESTNET` with the same values the CLI accepts (1/0, true/false,
+  yes/no, on/off). Test.
+- The pre-commit hook handles filenames with spaces and non-ASCII characters (NUL-separated
+  listing); checked by staging such files.
 - `wallet init` and `wallet restore` refuse an empty vault passphrase unless
   `ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1` is set. Test.
 - The CLI reads `ZUMBRA_DATA_DIR`, `ZUMBRA_TESTNET` and `ZUMBRA_SERVER`, as its docs, the

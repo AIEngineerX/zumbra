@@ -692,6 +692,12 @@ const DEFAULT_TESTNET_SERVER: &str = "https://testnet.zec.rocks:443";
 // Main
 // ---------------------------------------------------------------------------
 
+/// Same truthy set as the CLI's `--testnet` env parsing, so both binaries pick the same network
+/// from the same environment.
+fn env_truthy(v: &str) -> bool {
+    matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on" | "y" | "t")
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Informational commands must not open a wallet, load keys, or start sync.
@@ -723,7 +729,7 @@ async fn main() -> Result<()> {
         tracing::info!("Process hardened: ptrace blocked");
     }
 
-    let testnet = std::env::var("ZUMBRA_TESTNET").unwrap_or_default() == "1";
+    let testnet = env_truthy(&std::env::var("ZUMBRA_TESTNET").unwrap_or_default());
     let network = if testnet { Network::TestNetwork } else { Network::MainNetwork };
     let default_server = if testnet { DEFAULT_TESTNET_SERVER } else { DEFAULT_MAINNET_SERVER };
     let server_url = std::env::var("ZUMBRA_SERVER").unwrap_or_else(|_| default_server.to_string());
@@ -822,6 +828,18 @@ mod security_tests {
         assert!(server.seed.read().await.is_none());
         assert!(server.reviewed_send.lock().await.is_none());
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// The server must read ZUMBRA_TESTNET the way the CLI does, or one binary ends up on a
+    /// different network than the other from the same environment.
+    #[test]
+    fn testnet_env_accepts_the_same_values_as_the_cli() {
+        for v in ["1", "true", "TRUE", "yes", "on", "y", "t"] {
+            assert!(env_truthy(v), "{v} should mean testnet");
+        }
+        for v in ["0", "false", "no", "off", "n", "f", ""] {
+            assert!(!env_truthy(v), "{v} should mean mainnet");
+        }
     }
 
     #[test]

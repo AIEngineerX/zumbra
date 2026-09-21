@@ -57,29 +57,33 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
     let ows_wallet_name = std::env::var("OWS_WALLET").unwrap_or_else(|_| "default".to_string());
     let ows_passphrase = std::env::var("OWS_PASSPHRASE").unwrap_or_default();
 
+    // Reach the server before creating anything, so a dead server leaves nothing behind.
+    let height = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url).await? as u32;
+
     let (seed, created) = open_or_create_vault_seed(&ows_wallet_name, &ows_passphrase, None)?;
     if created {
         eprintln!("Created OWS vault wallet '{}'", ows_wallet_name);
     } else {
         eprintln!("OWS wallet '{}' already exists; reusing it. Its seed is not shown.", ows_wallet_name);
     }
-    let seed_phrase = seed.expose_secret().clone();
+    let staging = Staging::for_init(&cfg.data_dir, &ows_wallet_name, created, None);
 
-    let height = zumbra_engine::wallet::fetch_latest_height(&cfg.server_url).await? as u32;
-
-    zumbra_engine::wallet::restore(
+    let restored = zumbra_engine::wallet::restore(
         &cfg.data_dir,
         &cfg.server_url,
         cfg.network,
-        &seed_phrase,
+        seed.expose_secret(),
         height,
         None,
-        None, // no Zumbra vault — seed lives in OWS vault
+        None, // no Zumbra vault; the seed lives in the OWS vault
     )
-    .await?;
+    .await;
+    if let Err(e) = restored {
+        return Err(failed_with_rollback("Init", e, staging));
+    }
 
-    let default_policy = default_policy();
-    zumbra_engine::policy::save_policy(&cfg.data_dir, &default_policy)?;
+    write_default_policy_if_absent(&cfg.data_dir)?;
+    let default_policy = zumbra_engine::policy::load_policy_checked(&cfg.data_dir)?;
 
     // Get the wallet address for the MCP config
     let addresses = zumbra_engine::query::get_addresses()
@@ -142,7 +146,7 @@ pub async fn cmd_wallet_init(cfg: &Config) -> Result<()> {
             r.ows_wallet
         );
         println!();
-        println!("  Default policy:");
+        println!("  Policy:");
         println!(
             "    max_per_tx:         {} ZAT ({:.4} ZEC)",
             r.policy.max_per_tx,
@@ -186,7 +190,7 @@ pub fn default_policy() -> zumbra_engine::policy::SpendingPolicy {
 pub fn require_passphrase(passphrase: &str) -> Result<()> {
     if passphrase.is_empty() && std::env::var("ZUMBRA_UNSAFE_EMPTY_PASSPHRASE").as_deref() != Ok("1") {
         return Err(anyhow::anyhow!(
-            "OWS_PASSPHRASE is empty. Set a real vault passphrase, or set              ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1 to accept an unprotected vault."
+            "OWS_PASSPHRASE is empty. Set a real vault passphrase, or set ZUMBRA_UNSAFE_EMPTY_PASSPHRASE=1 to accept an unprotected vault."
         ));
     }
     Ok(())
@@ -220,20 +224,67 @@ pub fn open_or_create_vault_seed(
     Ok((SecretString::new(exported), true))
 }
 
-/// What `prepare_restore` put on disk. If the step after it fails, `rollback` removes it all,
-/// so a half-done restore cannot be mistaken for a wallet by the next `wallet init`.
+/// What an init or restore run has put on disk so far. If a later step fails, `rollback`
+/// removes exactly that, so a half-made wallet is never "reused" by the next run: not a vault
+/// seed nobody has seen, not a policy file, not a partial database.
 #[must_use]
 #[derive(Debug)]
-pub struct RestoreStaging {
-    ows_wallet: String,
+pub struct Staging {
+    /// The vault wallet this run created, if it created one (never one that already existed).
+    created_vault_wallet: Option<String>,
     vault_path: Option<std::path::PathBuf>,
-    policy_path: std::path::PathBuf,
+    /// The policy file this run wrote, if it wrote one (never one the operator already had).
+    wrote_policy: Option<std::path::PathBuf>,
+    db_path: std::path::PathBuf,
 }
 
-impl RestoreStaging {
-    pub fn rollback(self) {
-        ows_lib::delete_wallet(&self.ows_wallet, self.vault_path.as_deref()).ok();
-        std::fs::remove_file(&self.policy_path).ok();
+impl Staging {
+    pub fn for_init(
+        data_dir: &str,
+        ows_wallet: &str,
+        created: bool,
+        vault_path: Option<&std::path::Path>,
+    ) -> Self {
+        Staging {
+            created_vault_wallet: created.then(|| ows_wallet.to_string()),
+            vault_path: vault_path.map(|p| p.to_path_buf()),
+            wrote_policy: None,
+            db_path: std::path::Path::new(data_dir).join("zumbra-data.sqlite"),
+        }
+    }
+
+    /// Remove what this run created. Returns what could not be removed, so the caller can say
+    /// so instead of claiming a clean state.
+    pub fn rollback(self) -> Vec<String> {
+        let mut left = Vec::new();
+        if let Some(name) = &self.created_vault_wallet {
+            if let Err(e) = ows_lib::delete_wallet(name, self.vault_path.as_deref()) {
+                if ows_lib::get_wallet(name, self.vault_path.as_deref()).is_ok() {
+                    left.push(format!("OWS vault wallet '{}' ({})", name, e));
+                }
+            }
+        }
+        if let Some(p) = &self.wrote_policy {
+            if std::fs::remove_file(p).is_err() && p.exists() {
+                left.push(p.display().to_string());
+            }
+        }
+        for suffix in ["", "-wal", "-shm", "-journal"] {
+            let p = std::path::PathBuf::from(format!("{}{}", self.db_path.display(), suffix));
+            if p.exists() && std::fs::remove_file(&p).is_err() {
+                left.push(p.display().to_string());
+            }
+        }
+        left
+    }
+}
+
+fn failed_with_rollback(what: &str, err: anyhow::Error, staging: Staging) -> anyhow::Error {
+    let left = staging.rollback();
+    if left.is_empty() {
+        anyhow::anyhow!("{} failed and nothing was kept: {:#}. Fix the cause (usually the server) and run it again.", what, err)
+    } else {
+        anyhow::anyhow!("{} failed: {:#}. Could not remove: {}. Remove these by hand before running again.", what, err, left.join(", "))
     }
 }
 
@@ -246,7 +297,7 @@ pub fn prepare_restore(
     passphrase: &str,
     phrase: &str,
     vault_path: Option<&std::path::Path>,
-) -> Result<RestoreStaging> {
+) -> Result<Staging> {
     require_passphrase(passphrase)?;
     if ows_lib::get_wallet(ows_wallet, vault_path).is_ok() {
         return Err(anyhow::anyhow!(
@@ -256,12 +307,20 @@ pub fn prepare_restore(
     }
     ows_lib::import_wallet_mnemonic(ows_wallet, phrase, Some(passphrase), None, vault_path)
         .map_err(|e| anyhow::anyhow!("Failed to store the seed in the OWS vault: {}", e))?;
+    let mut staging = Staging::for_init(data_dir, ows_wallet, true, vault_path);
+    staging.wrote_policy = write_default_policy_if_absent(data_dir)?;
+    Ok(staging)
+}
+
+/// A policy the operator already wrote is theirs; only a missing one gets the default.
+/// Returns the path if this call wrote it.
+fn write_default_policy_if_absent(data_dir: &str) -> Result<Option<std::path::PathBuf>> {
+    let path = std::path::Path::new(data_dir).join("policy.toml");
+    if path.exists() {
+        return Ok(None);
+    }
     zumbra_engine::policy::save_policy(data_dir, &default_policy())?;
-    Ok(RestoreStaging {
-        ows_wallet: ows_wallet.to_string(),
-        vault_path: vault_path.map(|p| p.to_path_buf()),
-        policy_path: std::path::Path::new(data_dir).join("policy.toml"),
-    })
+    Ok(Some(path))
 }
 
 pub async fn cmd_wallet_restore(cfg: &Config, birthday: u32) -> Result<()> {
@@ -311,11 +370,7 @@ pub async fn cmd_wallet_restore(cfg: &Config, birthday: u32) -> Result<()> {
     }
     .await;
     if let Err(e) = restored {
-        staging.rollback();
-        return Err(anyhow::anyhow!(
-            "Restore failed and nothing was kept: {:#}. Fix the cause (usually the server) and run restore again.",
-            e
-        ));
+        return Err(failed_with_rollback("Restore", e, staging));
     }
 
     let addresses = zumbra_engine::query::get_addresses()
@@ -1124,6 +1179,66 @@ mod restore_tests {
         let err = open_or_create_vault_seed("empty2", "", Some(&vault)).unwrap_err().to_string();
         assert!(err.to_lowercase().contains("passphrase"), "init accepted an empty passphrase: {err}");
         assert!(ows_lib::get_wallet("empty2", Some(&vault)).is_err(), "init created a vault wallet anyway");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Restore must not replace a policy the operator already wrote, and a rollback must not
+    /// delete it either.
+    #[test]
+    fn restore_keeps_an_existing_policy_file_through_staging_and_rollback() {
+        let dir = scratch("restore-keep-policy");
+        let data_dir = dir.join("data");
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let dd = data_dir.to_str().unwrap();
+        let mut custom = default_policy();
+        custom.max_per_tx = 42;
+        zumbra_engine::policy::save_policy(dd, &custom).unwrap();
+        let phrase = ows_lib::generate_mnemonic(24).unwrap();
+
+        let staging = prepare_restore(dd, "keep", "pass", &phrase, Some(&dir.join("vault"))).unwrap();
+        assert_eq!(zumbra_engine::policy::load_policy_checked(dd).unwrap().max_per_tx, 42, "restore replaced the operator's policy");
+        let left = staging.rollback();
+        assert!(left.is_empty(), "rollback reported leftovers: {left:?}");
+        assert_eq!(zumbra_engine::policy::load_policy_checked(dd).unwrap().max_per_tx, 42, "rollback deleted the operator's policy");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The engine creates the wallet database before it can fail; rollback removes it too, so
+    /// the next restore is not told "wallet already exists".
+    #[test]
+    fn rollback_removes_a_database_the_engine_left_behind() {
+        let dir = scratch("restore-db");
+        let data_dir = dir.join("data");
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let dd = data_dir.to_str().unwrap();
+        let phrase = ows_lib::generate_mnemonic(24).unwrap();
+
+        let staging = prepare_restore(dd, "db", "pass", &phrase, Some(&dir.join("vault"))).unwrap();
+        std::fs::write(data_dir.join("zumbra-data.sqlite"), b"partial").unwrap();
+        let left = staging.rollback();
+
+        assert!(left.is_empty(), "rollback reported leftovers: {left:?}");
+        assert!(!data_dir.join("zumbra-data.sqlite").exists(), "the half-made database survived");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Init that created a vault seed and then failed must remove that seed: a seed nobody has
+    /// seen must not be "reused" by the next init.
+    #[test]
+    fn init_rollback_removes_a_vault_seed_nobody_has_seen() {
+        let dir = scratch("init-rollback");
+        let data_dir = dir.join("data");
+        std::fs::create_dir_all(&data_dir).unwrap();
+        let vault = dir.join("vault");
+
+        let (_seed, created) = open_or_create_vault_seed("fresh", "pass", Some(&vault)).unwrap();
+        assert!(created);
+        let left = Staging::for_init(data_dir.to_str().unwrap(), "fresh", created, Some(&vault)).rollback();
+
+        assert!(left.is_empty(), "rollback reported leftovers: {left:?}");
+        assert!(ows_lib::get_wallet("fresh", Some(&vault)).is_err(), "the unseen vault seed survived");
+        let (_again, created_again) = open_or_create_vault_seed("fresh", "pass", Some(&vault)).unwrap();
+        assert!(created_again, "the next init reused a seed instead of creating one");
         std::fs::remove_dir_all(&dir).ok();
     }
 

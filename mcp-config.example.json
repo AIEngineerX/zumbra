@@ -4,7 +4,7 @@
       "command": "zumbra-mcp",
       "env": {
         "OWS_WALLET": "default",
-        "OWS_PASSPHRASE": "",
+        "OWS_PASSPHRASE": "<your vault passphrase>",
         "ZUMBRA_DATA_DIR": "/path/to/.zumbra/mainnet"
       }
     }
