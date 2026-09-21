@@ -85,8 +85,9 @@ zumbra --testnet address          # paste this at a testnet faucet to get TAZ, w
 zumbra --testnet balance
 ```
 
-Testnet coins come from public faucets, not from this project. See
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for the release gate.
+The full path from clone to policy to a two-step send to the MCP config is
+[`docs/QUICKSTART.md`](docs/QUICKSTART.md). Testnet coins come from public faucets, not from this
+project. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release gate.
 
 ## Roadmap
 

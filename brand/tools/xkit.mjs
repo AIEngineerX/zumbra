@@ -83,7 +83,7 @@ render(doc(1600, 900,
     "3  Above threshold: a human approves on a channel the agent cannot call.",
     "4  Only then is the seed read, the tx signed, broadcast, and logged.",
   ], PALE, "start", 600) +
-  mono(120, 820, 20, "DESIGN INTENT · PHASE 2 · SEE DOCS/PLAN.MD", MIST)
+  mono(120, 820, 20, "DESIGN INTENT · SEE SECURITY.MD FOR WHAT HOLDS TODAY", MIST)
 ), 1600, "how-a-send-works-1600x900.png");
 
 // 6. Quote/blank card: mark and wordmark small top-left, room for text you type in the post

@@ -41,7 +41,8 @@ flowchart LR
 ```
 
 - The agent and the operator use the same engine. The difference is what each is allowed to
-  touch: the agent can propose and confirm; only the operator writes the policy.
+  touch: the agent can propose and confirm; the policy is written with the operator's CLI, and
+  no MCP tool touches it.
 - The seed is read from the vault only after the policy has passed, and only for the signing
   step. It is zeroised from memory afterwards.
 - The audit log is local SQLite. The daily cap is computed from it, not from memory, so a
@@ -70,8 +71,8 @@ sequenceDiagram
         M-->>A: error code, nothing signed
     else above threshold
         P-->>M: approval required
-        M->>O: waits for the operator
-        O-->>M: approve (on a channel the agent cannot call)
+        M-->>A: refused today (operator channel not built yet)
+        Note over M,O: Design: the operator approves on a channel the agent cannot call
     end
     M->>V: read seed
     V-->>M: seed
@@ -82,7 +83,9 @@ sequenceDiagram
 ```
 
 The order is the whole design: propose, policy, approve, sign. The seed is the last thing
-touched, never the first.
+touched, never the first. Today a send above the approval threshold is refused outright; the
+operator approval step is the next thing being built, and [`SECURITY.md`](../SECURITY.md) says
+exactly what holds now.
 
 ![How a send works](how-a-send-works.svg)
 
@@ -90,10 +93,14 @@ touched, never the first.
 
 | Can | Cannot |
 |---|---|
-| read balance, addresses, history, sync state | read or change the policy file |
+| read balance, addresses, history, sync state | change the policy through any tool |
 | propose a send and confirm it within the policy | approve its own above-threshold send |
 | shield transparent funds | unlock a locked wallet |
 | pay an x402 paywall within the policy | export, print or see the seed |
+
+No MCP tool reads or writes the policy. The file itself is protected by the operating system,
+not by Zumbra: if the agent runs as your OS user, it can edit the file with a text editor. Run
+the wallet as a separate user from the agent; `SECURITY.md` lists this as an open item.
 
 ## Where things live
 
