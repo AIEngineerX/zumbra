@@ -22,6 +22,13 @@ wallet is switched off. Their copyright line stays in [`LICENSE.md`](LICENSE.md)
 original YWallet author's and ours; [`NOTICE`](NOTICE) lists every bundled component. We do not
 contribute upstream and we are not affiliated with them.
 
+## How it works
+
+![How a send works: propose, policy, approve, sign, broadcast](docs/how-a-send-works.svg)
+
+The seed is the last thing touched, never the first. Components, the send sequence, and what the
+agent can and cannot do are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
 ## What it will be
 
 **The agent wallet.** A headless Zcash wallet: a Rust engine, a CLI, and an MCP server that any
@@ -31,8 +38,8 @@ No cloud, no custody, no telemetry, no baked-in third-party endpoints.
 
 ## Scope
 
-The mobile app, prediction markets, multi-party wallets, EVM paths and the merchant stack that
-existed in the fork's parent are being removed, not paused. Zumbra is the agent wallet.
+The mobile app, prediction markets, multi-party wallets, EVM paths, swaps and the merchant stack
+that existed in the fork's parent are removed, not paused. Zumbra is the agent wallet.
 
 ## Why a fork
 
@@ -54,7 +61,6 @@ what holds today and what does not.
 | `skills/` | Operator skill file for agent harnesses |
 | `npm/` | npm launcher that downloads and checksum-verifies release binaries |
 | `docs/BRAND.md`, `brand/` | Brand tokens, the mark, and the exporter that generates every asset |
-| `lib/`, `ios/`, `android/`, `assets/` | The parent's Flutter app; switched off, not maintained here |
 
 ## Building
 
@@ -88,12 +94,11 @@ In order, each with a done-criterion rather than a date:
 
 1. **Run it as forked.** Build from source, shielded testnet sends through the CLI and the MCP
    server, unmodified.
-2. **Make it ours.** Rename, remove the parent's endpoints and affiliate key, switch off what is
-   not the agent wallet.
+2. **Make it ours.** Rename, remove the parent's endpoints and affiliate key, remove what is
+   not the agent wallet. Done 2026-09-21.
 3. **Make it safe for an agent.** Close the listed gaps in [`SECURITY.md`](SECURITY.md), each
    with a test that fails on the fork point and passes here.
-4. **Privacy posture.** Fresh addresses per swap, Tor/SOCKS for the light client, encrypted
-   wallet database.
+4. **Privacy posture.** Tor/SOCKS for the light client, encrypted wallet database.
 5. **First agent on mainnet.** Capped wallet, operator approval over a channel the agent cannot
    call, prompt-injection tests recorded as integration tests.
 

@@ -15,6 +15,18 @@ versions follow [Semantic Versioning](https://semver.org/). Nothing has been rel
 
 ### Changed
 - README credits the parent project up front and states status precisely.
+- Renamed throughout: crates `zumbra`, `zumbra-mcp`, `zumbra-engine`; env prefix `ZUMBRA_`;
+  data directory `~/.zumbra`; npm package `zumbra`; skill folder `zumbra-operator`.
+- Default mainnet light-client server is a community one; nothing points at the parent's hosts.
+- MCP server describes only the tools it has; its website field points at this repository.
+
+### Removed
+- The parent's Flutter app, its bridge crate, and the wrapper workspace.
+- Swaps, EVM payments and sweeps, prediction markets, FROST multi-party wallets, the merchant
+  API, the research tools, the URL-fetching paywall tool, session tokens, and the relay-based
+  approval path. The MCP server exposes 17 wallet tools; the CLI has 15 commands.
+- The PCZT export subcommands, which had no policy check.
+- The parent's swap affiliate key and partner token.
 
 ### Security
 - Inherited from upstream's 2026-09-10 remediation: MCP self-unlock and self-approve tools

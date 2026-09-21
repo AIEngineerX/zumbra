@@ -31,15 +31,19 @@ Holds on the current code (verified by reading, not yet by running):
 - The vault is scrypt + AES-256-GCM; the npm installer verifies SHA-256 checksums.
 
 Does **not** hold yet (scheduled, in severity order):
+- `wallet restore` takes the seed phrase on the command line and keeps a plaintext copy in the
+  data directory; restored wallets start with no policy file.
 - A max-amount send skips the policy check.
-- Some spend paths (PCZT export, and the EVM and market paths being switched off) have no policy.
+- A missing policy file means no limits; a zero in the policy means unlimited, not zero.
 - Policy files, the audit database, and `policy set` are writable by the same OS user as the agent.
-- Two MCP tools can fetch arbitrary URLs and return the body to the model.
-- Untrusted strings (memos, fetched bodies) are not sanitised before reaching the model.
-- Session bearer tokens appear in tool output.
+- Above the approval threshold a send is blocked outright; the operator approval channel that
+  replaces the parent's relay is not built yet.
+- Untrusted strings (memos, 402 bodies) are not sanitised before reaching the model.
 - An empty vault passphrase is accepted by default.
-- Swaps send a stable address and the deposit txid to the swap operator under upstream's
-  affiliate key. Swaps are disabled until this is fixed.
+
+Removed rather than fixed, 2026-09-21: the PCZT export path, the EVM, swap and prediction-market
+paths, the URL-fetching paywall tool, the session tokens and the parent's relay. Swaps do not
+exist in Zumbra today.
 
 ## Non-goals
 

@@ -26,7 +26,7 @@ zumbra --testnet balance
 zumbra --testnet address
 
 # Send: propose (no seed loaded), then confirm (policy runs, then the seed is read)
-zumbra --testnet send propose --to <unified address> --amount 0.01
+zumbra --testnet send propose --to <unified address> --amount 1000000   # zatoshi; 0.01 ZEC
 zumbra --testnet send confirm
 ```
 
@@ -68,7 +68,6 @@ policy.
 | `get_transactions` | Recent history with memos |
 | `sync_status` | Synced height, latest height, whether syncing, connection errors |
 | `validate_address` | Address validity and type |
-| `pay_url` | Pays a 402 paywall by URL (x402 or MPP), bounded by the policy |
 | `pay_x402` | Pays an x402 paywall from a 402 response body, bounded by the policy |
 | `vote_eligibility` | Governance eligibility for a round |
 | `ironwood_plan`, `ironwood_status` | Read the NU6.3 Ironwood pool-migration plan and state |
