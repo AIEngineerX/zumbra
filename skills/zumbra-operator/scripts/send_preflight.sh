@@ -27,7 +27,7 @@ print(f\"  Fee:    {p['fee_zec']:.8f} ZEC ({p['fee']} zat)\")
 print(f\"  Total:  {p['total']} zat\")
 print()
 print('Run \`zumbra send confirm\` (or ./confirm_send.sh) to sign and broadcast.')
-print('ZUMBRA_SEED must be set in the environment.')
+print('OWS_PASSPHRASE must be set in the environment.')
 "
 
 exit $exit_code

@@ -11,14 +11,14 @@ audit are kept privately by the owner.
 git clone --recurse-submodules https://github.com/AIEngineerX/zumbra.git
 cd zumbra
 bash scripts/setup-hooks.sh        # installs the pre-commit secret block (once per clone)
-cd rust/crates/cli && cargo build --locked --release       # crate names change at the rename
-cd ../mcp-server && cargo build --locked --release
-cd ../.. && cargo test --locked -p "$(grep -m1 '^name' crates/engine/Cargo.toml | cut -d'"' -f2)"
+cd rust
+cargo build --locked --release -p zumbra -p zumbra-mcp
+cargo test --locked --workspace --exclude rust_lib_zumbra
 ```
 
 Rust stable with `rustfmt` and `clippy` (see `rust/rust-toolchain.toml`). `gitleaks` and
 `cargo-deny` are needed for the release gate. Testnet first: set the chain environment variable
-to `testnet` (its prefix changes at the rename; see `rust/crates/cli/src/main.rs`).
+to `testnet`: pass `--testnet`, or set `ZUMBRA_TESTNET=1`.
 
 ## Before you push
 

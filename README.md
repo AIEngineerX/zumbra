@@ -58,17 +58,29 @@ what holds today and what does not.
 
 ## Building
 
-Rust stable with `rustfmt` and `clippy`. Crate and binary names still carry the parent's until the
-rename lands; build by path.
+Rust stable with `rustfmt` and `clippy`, plus `protoc`, `cmake`, `pkg-config` and OpenSSL
+headers. Linux or macOS; on Windows use WSL (the daemon uses Unix sockets and there is no
+Windows binary).
 
 ```bash
 git clone --recurse-submodules https://github.com/AIEngineerX/zumbra.git
 cd zumbra && bash scripts/setup-hooks.sh
-cd rust/crates/cli && cargo build --locked --release          # the CLI
-cd ../mcp-server && cargo build --locked --release            # the MCP server
+cd rust && cargo build --locked --release -p zumbra -p zumbra-mcp
+# binaries: rust/target/release/zumbra and rust/target/release/zumbra-mcp
 ```
 
-Use testnet. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+First run, on testnet, with a real vault passphrase:
+
+```bash
+export OWS_PASSPHRASE='<a real passphrase>'
+zumbra --testnet wallet init      # prints the seed phrase once; store it
+zumbra --testnet sync start
+zumbra --testnet address          # paste this at a testnet faucet to get TAZ, which has no value
+zumbra --testnet balance
+```
+
+Testnet coins come from public faucets, not from this project. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the release gate.
 
 ## Roadmap
 

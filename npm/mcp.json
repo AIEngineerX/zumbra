@@ -1,14 +1,14 @@
 {
   "name": "zumbra-mcp",
-  "title": "Zumbra — Shielded Wallet for AI Agents",
+  "title": "Zumbra: shielded Zcash wallet for AI agents",
   "version": "0.2.0",
-  "description": "Headless Zcash wallet with encrypted vault, spending policies, and x402 paywall access",
-  "homepage": "https://zumbra.app",
-  "repository": "https://github.com/atmospherelabs-dev/zumbra-app",
+  "description": "Headless Zcash wallet for AI agents: encrypted vault, shielded sends, a spending policy the agent cannot edit",
+  "homepage": "https://zumbra.dev",
+  "repository": "https://github.com/AIEngineerX/zumbra",
   "transport": "stdio",
   "install": {
-    "npm": "npm install -g @cipherpay/zumbra",
-    "setup": "zumbra wallet init"
+    "npm": "npm install -g zumbra",
+    "setup": "zumbra --testnet wallet init"
   },
   "config": {
     "command": "zumbra-mcp"
@@ -16,61 +16,82 @@
   "tools": [
     {
       "name": "wallet_status",
-      "description": "Get wallet balance, sync height, seed source, and lock state"
+      "description": "Get wallet status: sync height, balance, primary address, policy summary, and seed source"
     },
     {
       "name": "wallet_lock",
-      "description": "Clear seed from memory — wallet becomes read-only until unlocked"
+      "description": "Lock the wallet — clears the seed from memory. All signing operations will fail until unlocked. Read-only tools (balance, status, transactions) still work."
     },
     {
-      "name": "wallet_unlock",
-      "description": "Re-decrypt seed from vault and restore wallet operations"
+      "name": "get_balance",
+      "description": "Get pool-specific wallet balance (shielded orchard, shielded sapling, transparent, unconfirmed)"
     },
     {
       "name": "propose_send",
-      "description": "Create a shielded ZEC transaction proposal (policy-checked, not yet signed)"
+      "description": "Create a send proposal. Returns fee and amount for review before signing. Call confirm_send to broadcast."
     },
     {
       "name": "confirm_send",
-      "description": "Sign and broadcast a proposed transaction"
-    },
-    {
-      "name": "approve_send",
-      "description": "Approve a transaction flagged for human-in-the-loop review"
+      "description": "Sign and broadcast the pending send proposal. Uses seed from server memory — never pass seed as argument."
     },
     {
       "name": "get_pending_approval",
-      "description": "Check if a transaction is awaiting human approval"
+      "description": "Get the current pending approval awaiting operator review, if any. Returns approval details or null."
+    },
+    {
+      "name": "shield_funds",
+      "description": "Shield transparent funds into the shielded pool. Uses seed from server memory."
+    },
+    {
+      "name": "get_transactions",
+      "description": "Get recent transaction history with memos"
+    },
+    {
+      "name": "sync_status",
+      "description": "Get current sync status: synced height, latest height, whether syncing, any connection errors"
+    },
+    {
+      "name": "validate_address",
+      "description": "Validate a Zcash address and return whether it is valid and its type"
     },
     {
       "name": "pay_url",
-      "description": "Pay an x402/MPP paywall — auto-detects protocol, pays, returns response"
+      "description": "Pay any 402 paywall by URL. Automatically detects x402 or MPP protocol, pays, retries the request, and returns the response. This is the simplest way to access a paid API."
     },
     {
-      "name": "session_open",
-      "description": "Open a prepaid session with a CipherPay-enabled API"
+      "name": "vote_eligibility",
+      "description": "Check voting eligibility for a governance round. Returns total eligible ZEC, number of notes, and number of bundles needed for delegation."
     },
     {
-      "name": "session_request",
-      "description": "Make a request using an active prepaid session"
+      "name": "ironwood_plan",
+      "description": "Read an Ironwood transfer plan from the current SDK. Requires an unlocked wallet seed for derivation; does not sign, persist or broadcast a transfer."
     },
     {
-      "name": "swap_quote",
-      "description": "Get a cross-chain swap quote (ZEC to any asset via Near Intents)"
+      "name": "ironwood_confirm",
+      "description": "Unavailable legacy Ironwood execution entry point. Does not sign or create a schedule; use the wallet app's reviewed SDK migration flow."
     },
     {
-      "name": "swap_execute",
-      "description": "Execute a cross-chain swap"
+      "name": "ironwood_status",
+      "description": "Read the current Ironwood migration state from the wallet's SDK database, including confirmed transactions and next due height."
     },
     {
-      "name": "get_policy",
-      "description": "View current spending policy limits"
+      "name": "ironwood_pause",
+      "description": "Unavailable legacy pause entry point. Cannot pause the SDK migration runner; use the wallet app managing the transfer."
     },
     {
-      "name": "set_policy",
-      "description": "Update spending policy (per-tx limit, daily cap, approval threshold, allowlist)"
+      "name": "ironwood_resume",
+      "description": "Unavailable legacy resume entry point. Cannot resume the SDK migration runner; use the wallet app managing the transfer."
+    },
+    {
+      "name": "pay_x402",
+      "description": "Pay an HTTP 402 paywall. Pass the full 402 response body. Returns txid and a PAYMENT-SIGNATURE header value to include when retrying the original request."
     }
   ],
-  "platforms": ["darwin-arm64", "darwin-x64", "linux-x64", "linux-arm64"],
+  "platforms": [
+    "darwin-arm64",
+    "darwin-x64",
+    "linux-x64",
+    "linux-arm64"
+  ],
   "license": "MIT"
 }

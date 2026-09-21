@@ -2,14 +2,14 @@
 set -euo pipefail
 
 # Pay an HTTP 402 paywall via zumbra x402 pay.
-# Requires ZUMBRA_SEED to be set. Returns txid + PAYMENT-SIGNATURE header.
+# Requires OWS_PASSPHRASE to be set. Returns txid + PAYMENT-SIGNATURE header.
 #
 # Usage:
 #   ./pay_x402.sh --body '<402 JSON>' [--context-id <ID>]
 #   echo '<402 JSON>' | ./pay_x402.sh --context-id <ID>
 
-if [ -z "${ZUMBRA_SEED:-}" ]; then
-    echo '{"ok":false,"error":"ZUMBRA_SEED is not set. Cannot sign transaction."}' >&2
+if [ -z "${OWS_PASSPHRASE:-}" ]; then
+    echo '{"ok":false,"error":"OWS_PASSPHRASE is not set. Cannot sign transaction."}' >&2
     exit 1
 fi
 

@@ -17,14 +17,14 @@ Print version, engine, network, data directory, and server URL.
 zumbra info
 ```
 
-### wallet create
+### wallet init
 Create a new wallet. Outputs seed phrase — store it securely.
 ```
 zumbra wallet create
 ```
 
 ### wallet restore
-Restore from seed phrase. Reads seed from `ZUMBRA_SEED` env var or stdin.
+Restore from a seed phrase. Operator-only; the agent never runs this and never handles the phrase.
 ```
 zumbra wallet restore --birthday <HEIGHT>
 ```

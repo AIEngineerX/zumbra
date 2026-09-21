@@ -1,42 +1,41 @@
-# @cipherpay/zumbra
+# zumbra
 
-Headless Zcash light wallet for AI agents. Shielded payments, spending policies, and x402 paywall access — from the command line or via MCP.
+Headless Zcash light wallet for AI agents. Shielded sends, a spending policy the agent cannot
+edit, and an MCP server. Pre-alpha: binaries are not published yet; build from source.
 
-## Install
+## Install (when releases exist)
 
 ```bash
-npm install -g @cipherpay/zumbra
+npm install -g zumbra
 ```
 
-Installs two binaries: `zumbra` (CLI) and `zumbra-mcp` (MCP server for AI agents).
+Installs two binaries: `zumbra` (CLI) and `zumbra-mcp` (MCP server for AI agents). The
+installer downloads the release binaries for your platform and verifies their SHA-256 checksums
+before installing them.
 
 ## Quick start
 
 ```bash
-# One-command setup: creates encrypted wallet, prints seed phrase + MCP config
-zumbra wallet init
+# Testnet first. Creates an encrypted OWS vault and a wallet inside it.
+export OWS_PASSPHRASE='<a real passphrase>'
+zumbra --testnet wallet init
 
-# Check balance (auto-syncs)
-zumbra balance
+# Sync and read
+zumbra --testnet sync start
+zumbra --testnet balance
+zumbra --testnet address
 
-# Send ZEC
-zumbra send --to <address> --amount 0.01
-
-# Pay any 402 paywall
-zumbra pay https://api.example.com/premium/weather
-
-# Cross-chain swap (ZEC → SOL, USDC, etc.)
-zumbra swap quote --to SOL --amount 0.5
-zumbra swap execute --to SOL --amount 0.5 --destination <solana-address>
-
-# Session-based payments (prepaid credit)
-zumbra session open --url https://api.example.com --amount 0.1
-zumbra session request --id <session-id> --endpoint /data
+# Send: propose (no seed loaded), then confirm (policy runs, then the seed is read)
+zumbra --testnet send propose --to <unified address> --amount 0.01
+zumbra --testnet send confirm
 ```
+
+Testnet coins (TAZ) have no value and come from a public faucet; the wallet's own address is
+what you paste there.
 
 ## MCP server
 
-For AI agent frameworks (Claude, Cursor, etc.), add to your MCP config:
+For any MCP client (Hermes, OpenClaw, Claude, Cursor), add to its config:
 
 ```json
 {
@@ -48,58 +47,68 @@ For AI agent frameworks (Claude, Cursor, etc.), add to your MCP config:
 }
 ```
 
-The MCP server loads the wallet seed from the encrypted OWS vault created by `zumbra wallet init`. No environment variables needed.
+The server loads the seed from the encrypted OWS vault created by `wallet init`, using
+`OWS_WALLET` and `OWS_PASSPHRASE` from its environment.
 
 ### MCP tools
 
-| Tool | Description |
-|------|-------------|
-| `wallet_status` | Balance, sync height, seed source, lock state |
-| `wallet_lock` / `wallet_unlock` | Clear seed from memory when not in use |
-| `propose_send` | Create a transaction proposal (policy-checked) |
-| `confirm_send` | Sign and broadcast a proposed transaction |
-| `approve_send` | Approve a transaction flagged for human review |
-| `get_pending_approval` | Check if a transaction is awaiting approval |
-| `pay_url` | Pay an x402 paywall in one step |
-| `session_open` / `session_request` | Prepaid session-based payments |
-| `swap_quote` / `swap_execute` | Cross-chain swaps via Near Intents |
-| `get_policy` / `set_policy` | View and update spending limits |
-| `cipherpay_create_invoice` | Create a CipherPay invoice (requires `CIPHERPAY_API_KEY`) |
-| `cipherpay_check_invoice` | Check invoice status by ID |
-| `cipherpay_balance` | Get merchant balance and stats (requires `CIPHERPAY_API_KEY`) |
+Generated from the server source by `.private/phase2/gen-mcp-manifest.py`; the same list is in
+`mcp.json`. No tool can unlock the wallet, approve a spend above the threshold, or change the
+policy.
+
+| Tool | What it does |
+|---|---|
+| `wallet_status` | Sync height, balance, primary address, policy summary, seed source |
+| `wallet_lock` | Clears the seed from memory; signing fails until the operator restarts the server |
+| `get_balance` | Balance per pool: Orchard, Sapling, transparent, unconfirmed |
+| `propose_send` | Builds a send proposal, returns fee and amount for review; no seed loaded |
+| `confirm_send` | Runs the policy, then signs and broadcasts the pending proposal |
+| `get_pending_approval` | Shows a proposal waiting on the operator, if any |
+| `shield_funds` | Moves transparent funds into the shielded pool |
+| `get_transactions` | Recent history with memos |
+| `sync_status` | Synced height, latest height, whether syncing, connection errors |
+| `validate_address` | Address validity and type |
+| `pay_url` | Pays a 402 paywall by URL (x402 or MPP), bounded by the policy |
+| `pay_x402` | Pays an x402 paywall from a 402 response body, bounded by the policy |
+| `vote_eligibility` | Governance eligibility for a round |
+| `ironwood_plan`, `ironwood_status` | Read the NU6.3 Ironwood pool-migration plan and state |
+| `ironwood_confirm`, `ironwood_pause`, `ironwood_resume` | Present for compatibility; return "unavailable" |
 
 ### Security model
 
-- **Encrypted vault** — seed phrase encrypted at rest (OWS standard)
-- **Process hardening** — core dumps disabled, ptrace blocked
-- **Spending policies** — per-transaction limits, daily caps, address allowlists
-- **Human-in-the-loop** — transactions above threshold require explicit approval
-- **Audit logging** — every agent action logged with timestamps
-- **Lock/unlock** — seed cleared from memory when wallet is locked
+- Seed at rest only in the encrypted OWS vault (scrypt + AES-256-GCM); never on stdout by default.
+- Process hardening: core dumps disabled, ptrace blocked.
+- Spending policy: per-transaction cap, rolling daily cap, destination allowlist, approval
+  threshold. The agent reads it; only the operator writes it.
+- Two-step sends with replay protection: confirm requires the exact proposal it was given.
+- Audit log: every proposal, spend and refusal, locally, in SQLite.
 
-## Spending policies
+The gaps that still exist are listed in the repository's SECURITY.md. Read it before funding
+anything.
 
-Default policy (created by `zumbra wallet init`):
+## Spending policy
+
+Default policy written by `wallet init`:
 
 ```toml
-max_per_tx = 1000000      # 0.01 ZEC per transaction
-daily_limit = 10000000     # 0.1 ZEC per day
-approval_threshold = 5000000  # 0.05 ZEC requires human approval
-allowlist = []             # Empty = any address allowed
+max_per_tx = 1000000          # 0.01 ZEC per transaction
+daily_limit = 10000000        # 0.1 ZEC per rolling day
+approval_threshold = 5000000  # 0.05 ZEC: above this the operator must approve
+allowlist = []                # empty = any address; set it
 ```
 
-Edit at `~/.zumbra/mainnet/policy.toml` or use `set_policy` via MCP.
+Edit `~/.zumbra/<network>/policy.toml` or use `zumbra policy set` as the operator.
 
 ## Supported platforms
 
-| OS    | Arch  |
-|-------|-------|
-| macOS | ARM64 |
-| macOS | x64   |
-| Linux | x64   |
-| Linux | ARM64 |
+| OS | Arch |
+|---|---|
+| macOS | ARM64, x64 |
+| Linux | x64, ARM64 |
+
+No Windows binary. Build in WSL.
 
 ## Links
 
-- [GitHub](https://github.com/atmospherelabs-dev/zumbra-app)
-- [CipherPay](https://cipherpay.app)
+- [GitHub](https://github.com/AIEngineerX/zumbra)
+- [Site](https://zumbra.dev)

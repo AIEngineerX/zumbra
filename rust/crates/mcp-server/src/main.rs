@@ -5,7 +5,7 @@ use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::ServerInfo;
 use rmcp::schemars;
 use rmcp::{tool, tool_handler, tool_router, ServerHandler, ServiceExt};
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::{SecretString};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
@@ -160,123 +160,20 @@ struct PayUrlParams {
     context_id: Option<String>,
 }
 
-#[derive(Deserialize, JsonSchema)]
-struct SwapQuoteParams {
-    /// Destination asset symbol (e.g., "USDC", "ETH", "BTC")
-    to_symbol: String,
-    /// Destination blockchain (e.g., "eth", "sol", "arb"). Required if symbol exists on multiple chains.
-    chain: Option<String>,
-    /// Amount in zatoshis to swap
-    amount: u64,
-    /// Recipient address on the destination chain
-    recipient: String,
-    /// Slippage tolerance in basis points (default: 100 = 1%)
-    slippage: Option<u32>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct SwapExecuteParams {
-    /// Destination asset symbol (e.g., "USDC", "ETH", "BTC")
-    to_symbol: String,
-    /// Destination blockchain (e.g., "eth", "sol", "arb")
-    chain: Option<String>,
-    /// Amount in zatoshis to swap
-    amount: u64,
-    /// Recipient address on the destination chain
-    recipient: String,
-    /// Slippage tolerance in basis points (default: 100 = 1%)
-    slippage: Option<u32>,
-    /// Context identifier for audit trail
-    context_id: Option<String>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct SwapStatusParams {
-    /// The deposit address from the swap quote
-    deposit_address: String,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct MarketResearchParams {
-    /// Search query — typically the market title or topic (e.g. "Bitcoin price above 100k by July 2026")
-    query: String,
-    /// Number of web results to fetch (default 5, max 10)
-    limit: Option<usize>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct SessionOpenParams {
-    /// Server URL to create a session for
-    server_url: String,
-    /// Amount in zatoshis to deposit as prepaid credit
-    deposit: u64,
-    /// Merchant ID on CipherPay
-    merchant_id: String,
-    /// Merchant's Zcash payment address
-    pay_to: String,
-    /// Context identifier for audit trail
-    context_id: Option<String>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct SessionRequestParams {
-    /// URL to request using session bearer token
-    url: String,
-    /// HTTP method (default: GET)
-    method: Option<String>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct SessionCloseParams {
-    /// Session ID to close
-    session_id: String,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct CipherpayInvoiceParams {
-    /// Product or service name for the invoice
-    product_name: String,
-    /// Amount in the specified currency (e.g. 25.00 for $25)
-    amount: f64,
-    /// Currency code (default: USD). Supported: USD, EUR, GBP, BRL, etc.
-    currency: Option<String>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct CipherpayCheckParams {
-    /// CipherPay invoice ID to check
-    invoice_id: String,
-}
 
 // --- Polymarket params ---
 
-#[derive(Deserialize, JsonSchema)]
-struct PolymarketDiscoverParams {
-    /// Optional keyword to search for (e.g., "bitcoin", "election", "AI")
-    keyword: Option<String>,
-    /// Max number of events to return (default 10)
-    limit: Option<u32>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct PolymarketPositionsParams {
-    /// EVM address to check positions for. Omit to use the wallet's derived address.
-    address: Option<String>,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct EvmBalancesParams {
-    /// Chain name: polygon, bsc, base, arb, eth, op
-    chain: String,
-}
 
-#[derive(Deserialize, JsonSchema)]
-struct SweepQuoteParams {
-    /// Token symbol to sweep (e.g., USDC, USDT, POL, BNB)
-    token: String,
-    /// Chain to sweep from (e.g., polygon, bsc, base, arb)
-    chain: String,
-}
 
 // --- Voting params ---
 
@@ -309,13 +206,6 @@ struct IronwoodResumeParams {}
 
 // --- HITL params ---
 
-#[derive(Deserialize, JsonSchema)]
-struct HitlPairParams {
-    /// Device name for the mobile wallet (e.g., "iPhone 15")
-    device_name: String,
-    /// Relay URL for the approval channel (no default; unset disables the relay)
-    relay_url: Option<String>,
-}
 
 #[derive(Deserialize, JsonSchema)]
 #[allow(dead_code)]
@@ -1010,34 +900,6 @@ impl ServerHandler for ZumbraMcpServer {
 // Swap helpers
 // ---------------------------------------------------------------------------
 
-fn find_dest_token<'a>(
-    tokens: &'a [zumbra_engine::swap::SwapToken],
-    symbol: &str,
-    chain: Option<&str>,
-) -> anyhow::Result<&'a zumbra_engine::swap::SwapToken> {
-    let matches: Vec<&zumbra_engine::swap::SwapToken> = tokens
-        .iter()
-        .filter(|t| t.symbol.eq_ignore_ascii_case(symbol))
-        .filter(|t| chain.map_or(true, |c| t.blockchain.eq_ignore_ascii_case(c)))
-        .collect();
-
-    match matches.len() {
-        0 => Err(anyhow::anyhow!(
-            "Token '{}' not found{}",
-            symbol,
-            chain.map_or(String::new(), |c| format!(" on chain '{}'", c))
-        )),
-        1 => Ok(matches[0]),
-        _ => {
-            let chains: Vec<String> = matches.iter().map(|t| t.blockchain.clone()).collect();
-            Err(anyhow::anyhow!(
-                "'{}' exists on multiple chains: {}. Specify chain.",
-                symbol,
-                chains.join(", ")
-            ))
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Configuration

@@ -523,64 +523,6 @@ async fn main() {
                 payment::cmd_x402_pay(&cfg, body, context_id).await
             }
         },
-            }
-            SwapCmd::Status { deposit_address } => {
-                swap::cmd_swap_status(&cfg, deposit_address).await
-            }
-        },
-            }
-            SessionCmd::Request { url, method } => {
-                session::cmd_session_request(&cfg, url, method).await
-            }
-            SessionCmd::List => session::cmd_session_list(&cfg).await,
-            SessionCmd::Close { session_id } => session::cmd_session_close(&cfg, session_id).await,
-        },
-            }
-            PolymarketCmd::Positions { user } => market::cmd_polymarket_positions(&cfg, user).await,
-            PolymarketCmd::TestOrder {
-                token_id,
-                amount,
-                price,
-                side,
-                neg_risk,
-            } => {
-                market::cmd_polymarket_test_order(&cfg, token_id, amount, price, side, neg_risk)
-                    .await
-            }
-            PolymarketCmd::FullBet {
-                token_id,
-                amount,
-                price,
-                side,
-                neg_risk,
-            } => {
-                market::cmd_polymarket_full_bet(&cfg, token_id, amount, price, side, neg_risk).await
-            }
-        },
-            }
-            FrostCmd::Spend {
-                to,
-                amount,
-                key1,
-                key2,
-                public_key_package,
-                memo,
-                broadcast,
-            } => {
-                frost::cmd_frost_spend(
-                    &cfg,
-                    to,
-                    amount,
-                    key1,
-                    key2,
-                    public_key_package,
-                    memo,
-                    broadcast,
-                )
-                .await
-            }
-        },
-        }
         Commands::Ironwood(sub) => match sub {
             IronwoodCmd::Plan => wallet::cmd_ironwood_plan(&cfg).await,
             IronwoodCmd::Confirm { tor } => wallet::cmd_ironwood_confirm(&cfg, tor).await,
@@ -588,13 +530,6 @@ async fn main() {
             IronwoodCmd::Pause => wallet::cmd_ironwood_pause(&cfg).await,
             IronwoodCmd::Resume => wallet::cmd_ironwood_resume(&cfg).await,
         },
-                        }
-                        Err(e) => Err(e),
-                    }
-                }
-                Err(e) => Err(e),
-            }
-        }
 
     };
 

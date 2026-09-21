@@ -24,8 +24,8 @@ Always parse the JSON output. Add `--human` only when displaying results to the 
 
 For operations involving seed phrases or wallet creation, **do not execute them yourself**. Instead, give the user exact instructions:
 
-- **Wallet creation:** Tell the user to run `zumbra wallet create` themselves and securely store the seed phrase.
-- **Wallet restore:** Tell the user to run `zumbra wallet restore --birthday <height>` and provide the seed via `ZUMBRA_SEED` env var or stdin.
+- **Wallet creation:** Tell the user to run `zumbra --testnet wallet init` themselves with `OWS_PASSPHRASE` set, and to store the seed phrase it prints once.
+- **Wallet restore:** Tell the user to run `zumbra wallet restore` themselves. Never handle the seed phrase in any form.
 - **Sync start:** Tell the user to run `zumbra sync start` — this is a long-running blocking operation.
 
 **Never ask the user to paste a mnemonic, passphrase, or private key into the chat.**
@@ -66,7 +66,7 @@ Only after explicit user confirmation:
 ./scripts/confirm_send.sh
 ```
 
-The seed must be available in `ZUMBRA_SEED`. The script will sign and broadcast the transaction, then clean up the pending proposal.
+Signing reads the seed from the encrypted OWS vault (`OWS_WALLET`, `OWS_PASSPHRASE` in the operator's environment). The script signs, broadcasts, and clears the pending proposal.
 
 ### 4. x402 Paywall Payment Mode
 
@@ -108,7 +108,7 @@ Add the `PAYMENT-SIGNATURE` header to your retry of the original HTTP request:
 PAYMENT-SIGNATURE: <the payment_signature value from step 4>
 ```
 
-The server will verify the payment via CipherPay and return the resource.
+The server verifies the payment on its side and returns the resource.
 
 ## Safety Boundaries
 
@@ -117,8 +117,9 @@ The server will verify the payment via CipherPay and return the resource.
 3. **Never** send funds without presenting a preflight summary and receiving explicit confirmation.
 4. **Never** auto-approve sends above the policy's approval threshold.
 5. **Never** attempt to read, log, or display the seed phrase.
-6. **Always** include a `--context-id` when proposing sends (policy may require it).
-7. **Always** check the audit log after a send to verify it was recorded.
+6. **Never** run `policy set`, `policy add-allowlist`, `wallet delete`, or `daemon unlock`. Those belong to the operator; the agent reads the policy and never writes it.
+7. **Always** include a `--context-id` when proposing sends (policy may require it).
+8. **Always** check the audit log after a send to verify it was recorded.
 
 ## Error Handling
 
@@ -141,7 +142,8 @@ Common error codes and what to do:
 
 | Variable | Description |
 |----------|-------------|
-| `ZUMBRA_SEED` | Seed phrase for signing (never set this in chat) |
+| `OWS_WALLET` | Name of the encrypted vault wallet (set by the operator) |
+| `OWS_PASSPHRASE` | Vault passphrase (operator's environment only; never in chat) |
 | `ZUMBRA_DATA_DIR` | Override wallet data directory |
 | `ZUMBRA_TESTNET` | Set to `1` for testnet |
 | `ZUMBRA_SERVER` | Override lightwalletd server URL |

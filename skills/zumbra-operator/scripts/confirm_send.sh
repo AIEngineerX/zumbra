@@ -2,15 +2,15 @@
 set -euo pipefail
 
 # Sign and broadcast the pending send proposal.
-# Requires ZUMBRA_SEED to be set in the environment.
+# Requires OWS_WALLET and OWS_PASSPHRASE in the operator's environment (the seed lives in the vault).
 #
 # SAFETY: This script spends real ZEC. Only run after reviewing the proposal.
 
 ZUMBRA_CLI="${ZUMBRA_CLI:-zumbra}"
 FLAGS="${ZUMBRA_FLAGS:-}"
 
-if [ -z "${ZUMBRA_SEED:-}" ]; then
-    echo "ERROR: ZUMBRA_SEED is not set. Cannot sign transaction."
+if [ -z "${OWS_PASSPHRASE:-}" ]; then
+    echo "ERROR: OWS_PASSPHRASE is not set. Cannot sign transaction."
     echo "Set it in the environment before running this script."
     exit 1
 fi
