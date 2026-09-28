@@ -20,7 +20,7 @@ jobs:
     name: gitleaks (full history)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
@@ -31,7 +31,7 @@ jobs:
     name: no secrets-shaped files, no upstream leftovers in new code
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: tracked files that must never exist
         run: |
           set -e
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           submodules: recursive
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
